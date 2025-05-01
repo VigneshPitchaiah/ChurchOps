@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Church Attendance System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Welcome to Church Attendance System</h1>
+    <p>This system helps you easily mark attendance for church services.</p>
+    
+    <div class="actions">
+        <a href="{{ url_for('services') }}" class="btn">View Upcoming Services</a>
+        <a href="{{ url_for('reports') }}" class="btn btn-secondary">View Reports</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Quick Guide</h2>
+    <ol>
+        <li>Go to <strong>Services</strong> to see upcoming services</li>
+        <li>Select a service to mark attendance</li>
+        <li>Check the boxes for people who are present</li>
+        <li>Use the search box to quickly find people by name</li>
+        <li>View attendance reports to track participation over time</li>
+    </ol>
+</div>
+{% endblock %}

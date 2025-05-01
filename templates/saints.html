@@ -1,0 +1,682 @@
+{% extends "base.html" %}
+
+{% block title %}Saints - Church Attendance System{% endblock %}
+
+{% block head %}
+<style>
+    .filter-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .filter-item label {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .filter-item select, .filter-item input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .filter-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1rem;
+    }
+    .filter-stats {
+        margin: 1rem 0;
+        padding: 0.5rem;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .saints-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .saints-table th, .saints-table td {
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .saints-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .saints-table th {
+        background-color: #f0f0f0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .table-container {
+        max-height: 70vh;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        overflow-x: auto;
+        width: 100%;
+    }
+    .present {
+        background-color: #e3f2fd;
+    }
+    .absent {
+        background-color: #ffebee;
+    }
+    .sticky-panel {
+        position: sticky;
+        top: 1rem;
+        z-index: 100;
+        background-color: white;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .service-selection {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+    .service-selection select {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .attendance-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    .select-all-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .select-all-container input {
+        margin-right: 0.5rem;
+    }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+        flex-wrap: wrap;
+    }
+    .pagination li {
+        margin: 0.25rem;
+    }
+    .pagination a {
+        display: inline-block;
+        padding: 0.5rem 0.75rem;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        text-decoration: none;
+        color: var(--primary-color);
+    }
+    .pagination a:hover {
+        background-color: #f5f5f5;
+    }
+    .pagination .active a {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    .pagination .disabled a {
+        color: #ccc;
+        cursor: not-allowed;
+    }
+    .attendance-status {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .radio-container {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .status-count {
+        margin-top: 0.5rem;
+        display: flex;
+        gap: 1rem;
+    }
+    .status-count div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .status-badge {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+    }
+    .present-badge {
+        background-color: #e3f2fd;
+        border: 1px solid #bbdefb;
+    }
+    .absent-badge {
+        background-color: #ffebee;
+        border: 1px solid #ffcdd2;
+    }
+    .unmarked-badge {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .filter-container {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .filter-item {
+            margin-bottom: 0.5rem;
+        }
+        .sticky-panel {
+            padding: 0.75rem;
+        }
+        .select-all-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .select-all-container div {
+            margin-bottom: 0.25rem;
+        }
+        .status-count {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .saints-table th, .saints-table td {
+            padding: 0.4rem;
+            font-size: 0.85rem;
+        }
+        .attendance-status {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .pagination {
+            gap: 0.25rem;
+        }
+        .pagination a {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        /* Simplify table for very small screens */
+        .saints-table {
+            display: block;
+            width: 100%;
+        }
+        .saints-table thead {
+            display: none; /* Hide header on mobile */
+        }
+        .saints-table tbody {
+            display: block;
+            width: 100%;
+        }
+        .saints-table tr {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .saints-table td {
+            display: flex;
+            padding: 0.25rem 0;
+            border: none;
+        }
+        .saints-table td:before {
+            content: attr(data-label);
+            font-weight: bold;
+            width: 40%;
+            margin-right: 0.5rem;
+        }
+        .saints-table .attendance-status {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        /* Simplify pagination for tiny screens */
+        .pagination li:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Saints Directory</h1>
+    <p>View and filter saints (church members) and mark attendance.</p>
+    
+    <div class="sticky-panel">
+        <h2>Filters</h2>
+        <form id="filterForm" method="GET" action="{{ url_for('saints') }}">
+            <div class="filter-container">
+                <div class="filter-item">
+                    <label for="region_id">Region:</label>
+                    <select name="region_id" id="region_id" onchange="updateDepartmentOptions()">
+                        <option value="">All Regions</option>
+                        {% for region in regions %}
+                        <option value="{{ region[0] }}" {% if filters.region_id|string == region[0]|string %}selected{% endif %}>
+                            {{ region[1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="direction_id">Direction:</label>
+                    <select name="direction_id" id="direction_id" onchange="updateDepartmentOptions()">
+                        <option value="">All Directions</option>
+                        {% for direction in directions %}
+                        <option value="{{ direction[0] }}" 
+                                data-region="{{ direction[2] }}"
+                                {% if filters.direction_id|string == direction[0]|string %}selected{% endif %}
+                                {% if filters.region_id and filters.region_id|string != direction[2]|string %}style="display:none;"{% endif %}>
+                            {{ direction[1] }} ({{ direction[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="department_id">Department:</label>
+                    <select name="department_id" id="department_id" onchange="updateTeamOptions()">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept[0] }}" 
+                                data-direction="{{ dept[2] }}"
+                                {% if filters.department_id|string == dept[0]|string %}selected{% endif %}
+                                {% if filters.direction_id and filters.direction_id|string != dept[2]|string %}style="display:none;"{% endif %}>
+                            {{ dept[1] }} ({{ dept[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="team_id">Team:</label>
+                    <select name="team_id" id="team_id" onchange="updateCellOptions()">
+                        <option value="">All Teams</option>
+                        {% for team in teams %}
+                        <option value="{{ team[0] }}" 
+                                data-dept="{{ team[2] }}"
+                                {% if filters.team_id|string == team[0]|string %}selected{% endif %}
+                                {% if filters.department_id and filters.department_id|string != team[2]|string %}style="display:none;"{% endif %}>
+                            {{ team[1] }} ({{ team[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="cell_id">Cell:</label>
+                    <select name="cell_id" id="cell_id">
+                        <option value="">All Cells</option>
+                        {% for cell in cells %}
+                        <option value="{{ cell[0] }}" 
+                                data-team="{{ cell[2] }}"
+                                {% if filters.cell_id|string == cell[0]|string %}selected{% endif %}
+                                {% if filters.team_id and filters.team_id|string != cell[2]|string %}style="display:none;"{% endif %}>
+                            {{ cell[1] }} ({{ cell[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="is_active">Status:</label>
+                    <select name="is_active" id="is_active">
+                        <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>Active Members</option>
+                        <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>Inactive Members</option>
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="name_search">Name Search:</label>
+                    <input type="text" name="name_search" id="name_search" placeholder="Search by name" 
+                          value="{{ filters.name_search }}">
+                </div>
+            </div>
+            
+            <input type="hidden" name="page" id="page_input" value="{{ pagination.page }}">
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn">Apply Filters</button>
+                <a href="{{ url_for('saints') }}" class="btn btn-secondary">Clear Filters</a>
+            </div>
+        </form>
+        
+        <div class="filter-stats">
+            <div>{{ pagination.total_count }} saints found (Showing {{ people|length }} on page {{ pagination.page }} of {{ pagination.total_pages }})</div>
+        </div>
+    </div>
+    
+    {% if people %}
+        <form method="POST" action="{{ url_for('mark_attendance') }}">
+            <input type="hidden" name="return_url" value="{{ request.path }}?{{ request.query_string.decode() }}">
+            
+            <div class="service-selection">
+                <h3>Mark Attendance</h3>
+                <select name="service_id" id="service_id" required>
+                    <option value="">Select a Service</option>
+                    {% for service in services %}
+                    <option value="{{ service[0] }}" {% if filters.service_id|string == service[0]|string %}selected{% endif %}>
+                        {{ service[1] }} - {{ service[2] }} {{ service[3] }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <div class="attendance-actions">
+                    <div class="select-all-container">
+                        <div>
+                            <input type="radio" id="select-all-present" name="select-all" onchange="markAllAs('present')">
+                            <label for="select-all-present">Mark All Present</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="select-all-absent" name="select-all" onchange="markAllAs('absent')">
+                            <label for="select-all-absent">Mark All Absent</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="select-all-unmarked" name="select-all" onchange="markAllAs('unmarked')">
+                            <label for="select-all-unmarked">Clear All</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Save Attendance</button>
+                </div>
+                
+                <div class="status-count">
+                    <div>
+                        <span class="status-badge present-badge"></span>
+                        <span id="present-count">0</span> Present
+                    </div>
+                    <div>
+                        <span class="status-badge absent-badge"></span>
+                        <span id="absent-count">0</span> Absent
+                    </div>
+                    <div>
+                        <span class="status-badge unmarked-badge"></span>
+                        <span id="unmarked-count">{{ people|length }}</span> Unmarked
+                    </div>
+                </div>
+                
+                <textarea name="notes" placeholder="Notes (optional)" rows="2" style="width: 100%; margin-top: 0.5rem;"></textarea>
+            </div>
+            
+            <!-- Pagination controls -->
+            {% if pagination.total_pages > 1 %}
+            <ul class="pagination">
+                {% set pages = range(max(1, pagination.page - 2), min(pagination.total_pages, pagination.page + 2) + 1) %}
+                
+                <li class="{% if pagination.page == 1 %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page > 1 %}goToPage(1){% endif %}">First</a>
+                </li>
+                <li class="{% if pagination.page == 1 %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page > 1 %}goToPage({{ pagination.page - 1 }}){% endif %}">Prev</a>
+                </li>
+                
+                {% for p in pages %}
+                <li class="{% if p == pagination.page %}active{% endif %}">
+                    <a href="javascript:void(0)" onclick="goToPage({{ p }})">{{ p }}</a>
+                </li>
+                {% endfor %}
+                
+                <li class="{% if pagination.page == pagination.total_pages %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page < pagination.total_pages %}goToPage({{ pagination.page + 1 }}){% endif %}">Next</a>
+                </li>
+                <li class="{% if pagination.page == pagination.total_pages %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page < pagination.total_pages %}goToPage({{ pagination.total_pages }}){% endif %}">Last</a>
+                </li>
+            </ul>
+            {% endif %}
+            
+            <div class="table-container">
+                <table class="saints-table">
+                    <thead>
+                        <tr>
+                            <th width="10%">Attendance</th>
+                            <th width="15%">Name</th>
+                            <th width="10%">Phone</th>
+                            <th width="15%">Cell</th>
+                            <th width="15%">Team</th>
+                            <th width="15%">Department</th>
+                            <th width="15%">Direction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for person in people %}
+                        <tr class="{% if person.present %}present{% elif person.absent %}absent{% endif %}" data-id="{{ person.id }}">
+                            <td data-label="Attendance:">
+                                <div class="attendance-status">
+                                    <div class="radio-container">
+                                        <input type="radio" name="attendance_{{ person.id }}" value="present" id="present_{{ person.id }}" 
+                                               {% if person.present %}checked{% endif %}
+                                               onchange="updateAttendanceStatus({{ person.id }}, 'present')">
+                                        <label for="present_{{ person.id }}">Present</label>
+                                    </div>
+                                    <div class="radio-container">
+                                        <input type="radio" name="attendance_{{ person.id }}" value="absent" id="absent_{{ person.id }}" 
+                                               {% if person.absent %}checked{% endif %}
+                                               onchange="updateAttendanceStatus({{ person.id }}, 'absent')">
+                                        <label for="absent_{{ person.id }}">Absent</label>
+                                    </div>
+                                    <div class="radio-container">
+                                        <input type="radio" name="attendance_{{ person.id }}" value="unmarked" id="unmarked_{{ person.id }}" 
+                                               {% if not person.present and not person.absent %}checked{% endif %}
+                                               onchange="updateAttendanceStatus({{ person.id }}, 'unmarked')">
+                                        <label for="unmarked_{{ person.id }}">Clear</label>
+                                    </div>
+                                    
+                                    <!-- Hidden inputs to store the actual values -->
+                                    <input type="checkbox" name="present_ids" value="{{ person.id }}" 
+                                           style="display: none;" class="present-checkbox" 
+                                           {% if person.present %}checked{% endif %}>
+                                    <input type="checkbox" name="absent_ids" value="{{ person.id }}" 
+                                           style="display: none;" class="absent-checkbox" 
+                                           {% if person.absent %}checked{% endif %}>
+                                </div>
+                            </td>
+                            <td data-label="Name:">{{ person.first_name }} {{ person.last_name }}</td>
+                            <td data-label="Phone:">{{ person.phone or '-' }}</td>
+                            <td data-label="Cell:">{{ person.cell_name }}</td>
+                            <td data-label="Team:">{{ person.team_name }}</td>
+                            <td data-label="Department:">{{ person.department_name }}</td>
+                            <td data-label="Direction:">{{ person.direction_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Duplicate pagination controls at the bottom -->
+            {% if pagination.total_pages > 1 %}
+            <ul class="pagination">
+                {% set pages = range(max(1, pagination.page - 2), min(pagination.total_pages, pagination.page + 2) + 1) %}
+                
+                <li class="{% if pagination.page == 1 %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page > 1 %}goToPage(1){% endif %}">First</a>
+                </li>
+                <li class="{% if pagination.page == 1 %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page > 1 %}goToPage({{ pagination.page - 1 }}){% endif %}">Prev</a>
+                </li>
+                
+                {% for p in pages %}
+                <li class="{% if p == pagination.page %}active{% endif %}">
+                    <a href="javascript:void(0)" onclick="goToPage({{ p }})">{{ p }}</a>
+                </li>
+                {% endfor %}
+                
+                <li class="{% if pagination.page == pagination.total_pages %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page < pagination.total_pages %}goToPage({{ pagination.page + 1 }}){% endif %}">Next</a>
+                </li>
+                <li class="{% if pagination.page == pagination.total_pages %}disabled{% endif %}">
+                    <a href="javascript:void(0)" onclick="{% if pagination.page < pagination.total_pages %}goToPage({{ pagination.total_pages }}){% endif %}">Last</a>
+                </li>
+            </ul>
+            {% endif %}
+        </form>
+    {% else %}
+        <p>No saints found with the current filters. Try adjusting your filter criteria.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Apply initial filter states
+        updateDepartmentOptions();
+        updateTeamOptions();
+        updateCellOptions();
+    });
+
+    function updateDepartmentOptions() {
+        const regionSelect = document.getElementById('region_id');
+        const directionSelect = document.getElementById('direction_id');
+        const departmentSelect = document.getElementById('department_id');
+        
+        if (!regionSelect || !directionSelect || !departmentSelect) return;
+        
+        const selectedRegion = regionSelect.value;
+        const selectedDirection = directionSelect.value;
+        
+        // First handle directions based on region
+        Array.from(directionSelect.options).forEach(function(option) {
+            const optionRegion = option.dataset.region;
+            if (!selectedRegion || optionRegion === selectedRegion || option.value === '') {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Then handle departments based on direction
+        Array.from(departmentSelect.options).forEach(function(option) {
+            const optionDirection = option.dataset.direction;
+            if (!selectedDirection || optionDirection === selectedDirection || option.value === '') {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Cascade the update
+        updateTeamOptions();
+    }
+    
+    function updateTeamOptions() {
+        const departmentSelect = document.getElementById('department_id');
+        const teamSelect = document.getElementById('team_id');
+        
+        if (!departmentSelect || !teamSelect) return;
+        
+        const selectedDepartment = departmentSelect.value;
+        
+        Array.from(teamSelect.options).forEach(function(option) {
+            const optionDept = option.dataset.dept;
+            if (!selectedDepartment || optionDept === selectedDepartment || option.value === '') {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Cascade the update
+        updateCellOptions();
+    }
+    
+    function updateCellOptions() {
+        const teamSelect = document.getElementById('team_id');
+        const cellSelect = document.getElementById('cell_id');
+        
+        if (!teamSelect || !cellSelect) return;
+        
+        const selectedTeam = teamSelect.value;
+        
+        Array.from(cellSelect.options).forEach(function(option) {
+            const optionTeam = option.dataset.team;
+            if (!selectedTeam || optionTeam === selectedTeam || option.value === '') {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+    
+    function markAllAs(status) {
+        document.querySelectorAll('tr[data-id]').forEach(row => {
+            const personId = row.getAttribute('data-id');
+            const presentRadio = document.getElementById(`present_${personId}`);
+            const absentRadio = document.getElementById(`absent_${personId}`);
+            const unmarkedRadio = document.getElementById(`unmarked_${personId}`);
+            
+            if (status === 'present') {
+                presentRadio.checked = true;
+            } else if (status === 'absent') {
+                absentRadio.checked = true;
+            } else {
+                unmarkedRadio.checked = true;
+            }
+            
+            // Update individual status
+            updateAttendanceStatus(personId, status);
+        });
+    }
+    
+    function updateAttendanceStatus(personId, status) {
+        const row = document.querySelector(`tr[data-id="${personId}"]`);
+        const presentCheckbox = row.querySelector('input[name="present_ids"]');
+        const absentCheckbox = row.querySelector('input[name="absent_ids"]');
+        
+        // Reset row classes
+        row.classList.remove('present', 'absent');
+        
+        // Update checkboxes
+        if (status === 'present') {
+            presentCheckbox.checked = true;
+            absentCheckbox.checked = false;
+            row.classList.add('present');
+        } else if (status === 'absent') {
+            presentCheckbox.checked = false;
+            absentCheckbox.checked = true;
+            row.classList.add('absent');
+        } else {
+            presentCheckbox.checked = false;
+            absentCheckbox.checked = false;
+        }
+        
+        // Update attendance counters
+        updateAttendanceCounters();
+    }
+    
+    function updateAttendanceCounters() {
+        const presentCount = document.querySelectorAll('input[name="present_ids"]:checked').length;
+        const absentCount = document.querySelectorAll('input[name="absent_ids"]:checked').length;
+        const totalCount = document.querySelectorAll('tr[data-id]').length;
+        const unmarkedCount = totalCount - presentCount - absentCount;
+        
+        document.getElementById('present-count').textContent = presentCount;
+        document.getElementById('absent-count').textContent = absentCount;
+        document.getElementById('unmarked-count').textContent = unmarkedCount;
+    }
+    
+    function goToPage(page) {
+        document.getElementById('page_input').value = page;
+        document.getElementById('filterForm').submit();
+    }
+</script>
+{% endblock %}

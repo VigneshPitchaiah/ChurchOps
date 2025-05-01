@@ -1,0 +1,1161 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Assignments - Church Attendance System{% endblock %}
+
+{% block head %}
+<style>
+    .assignment-container {
+        margin-bottom: 1.5rem;
+    }
+    .person-card {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+    .assignment-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+    .form-group label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+    .assignment-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        justify-content: flex-end;
+    }
+    .search-container {
+        margin-bottom: 1rem;
+    }
+    .search-results {
+        margin-top: 0.5rem;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0.5rem;
+    }
+    .person-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    .person-item:hover {
+        background-color: #f0f0f0;
+    }
+    .filter-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .filter-item label {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .filter-item select, .filter-item input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .current-assignments {
+        margin-top: 1rem;
+    }
+    .tab-container {
+        margin-bottom: 1rem;
+    }
+    .tab-buttons {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1rem;
+    }
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .tab-button:hover {
+        background-color: #f9f9f9;
+    }
+    .tab-button.active {
+        border-bottom-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .assignment-form {
+            grid-template-columns: 1fr;
+        }
+        .filter-container {
+            grid-template-columns: 1fr;
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Additional styles for import tab */
+    .import-container {
+        margin-bottom: 1.5rem;
+    }
+    .import-instructions {
+        background-color: #f8f8f8;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+    }
+    .import-instructions code {
+        background-color: #e0e0e0;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        font-family: monospace;
+    }
+    .progress-bar-container {
+        width: 100%;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 100%;
+        background-color: var(--primary-color);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    .checkbox-container, .radio-container {
+        margin: 0.5rem 0;
+    }
+    #import-summary {
+        margin-bottom: 1rem;
+        font-weight: bold;
+    }
+    #import-details {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        border-radius: 4px;
+    }
+    .import-success {
+        color: #155724;
+        background-color: #d4edda;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        margin-bottom: 0.25rem;
+    }
+    .import-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        margin-bottom: 0.25rem;
+    }
+    .import-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        margin-bottom: 0.25rem;
+    }
+    .created-people-table, .verify-results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    .created-people-table th, .created-people-table td,
+    .verify-results-table th, .verify-results-table td {
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .created-people-table th, .verify-results-table th {
+        background-color: #f0f0f0;
+    }
+    .verify-container {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+        margin-bottom: 1rem;
+    }
+    #verify-message {
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Manage Assignments</h1>
+    
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="search">Search People</button>
+            <button class="tab-button" data-tab="bulk">Bulk Assignments</button>
+            <button class="tab-button" data-tab="import">Import File</button>
+        </div>
+        
+        <!-- Search Tab -->
+        <div id="search-tab" class="tab-content active">
+            <div class="search-container">
+                <label for="person-search"><strong>Search for a person:</strong></label>
+                <input type="text" id="person-search" class="search-input" placeholder="Enter name to search...">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+            
+            <div id="selected-person" class="hidden">
+                <div class="person-card">
+                    <h3 id="person-name">Person Name</h3>
+                    <p id="current-assignments"></p>
+                    
+                    <form id="assignment-form" class="assignment-form">
+                        <input type="hidden" id="person-id" name="person_id">
+                        
+                        <div class="form-group">
+                            <label for="region-select">Region:</label>
+                            <select id="region-select" name="region_id" class="assignment-select">
+                                <option value="">-- Select Region --</option>
+                                {% for region in regions %}
+                                <option value="{{ region[0] }}">{{ region[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="direction-select">Direction:</label>
+                            <select id="direction-select" name="direction_id" class="assignment-select">
+                                <option value="">-- Select Direction --</option>
+                                {% for direction in directions %}
+                                <option value="{{ direction[0] }}" data-region="{{ direction[2] }}">
+                                    {{ direction[1] }} ({{ direction[3] }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="department-select">Department:</label>
+                            <select id="department-select" name="department_id" class="assignment-select">
+                                <option value="">-- Select Department --</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept[0] }}" data-direction="{{ dept[2] }}">
+                                    {{ dept[1] }} ({{ dept[3] }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="team-select">Team:</label>
+                            <select id="team-select" name="team_id" class="assignment-select">
+                                <option value="">-- Select Team --</option>
+                                {% for team in teams %}
+                                <option value="{{ team[0] }}" data-dept="{{ team[2] }}">
+                                    {{ team[1] }} ({{ team[3] }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cell-select">Cell:</label>
+                            <select id="cell-select" name="cell_id" class="assignment-select">
+                                <option value="">-- Select Cell --</option>
+                                {% for cell in cells %}
+                                <option value="{{ cell[0] }}" data-team="{{ cell[2] }}">
+                                    {{ cell[1] }} ({{ cell[3] }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="is-active">Member Status:</label>
+                            <select id="is-active" name="is_active">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                    
+                    <div class="assignment-actions">
+                        <button id="save-assignment" class="btn">Save Assignment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bulk Tab -->
+        <div id="bulk-tab" class="tab-content">
+            <div class="filter-container">
+                <div class="filter-item">
+                    <label for="bulk-region-filter">Source Region:</label>
+                    <select id="bulk-region-filter" class="filter-select">
+                        <option value="">All Regions</option>
+                        {% for region in regions %}
+                        <option value="{{ region[0] }}">{{ region[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="bulk-direction-filter">Source Direction:</label>
+                    <select id="bulk-direction-filter" class="filter-select">
+                        <option value="">All Directions</option>
+                        {% for direction in directions %}
+                        <option value="{{ direction[0] }}" data-region="{{ direction[2] }}">
+                            {{ direction[1] }} ({{ direction[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="bulk-department-filter">Source Department:</label>
+                    <select id="bulk-department-filter" class="filter-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept[0] }}" data-direction="{{ dept[2] }}">
+                            {{ dept[1] }} ({{ dept[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="bulk-team-filter">Source Team:</label>
+                    <select id="bulk-team-filter" class="filter-select">
+                        <option value="">All Teams</option>
+                        {% for team in teams %}
+                        <option value="{{ team[0] }}" data-dept="{{ team[2] }}">
+                            {{ team[1] }} ({{ team[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="bulk-cell-filter">Source Cell:</label>
+                    <select id="bulk-cell-filter" class="filter-select">
+                        <option value="">All Cells</option>
+                        {% for cell in cells %}
+                        <option value="{{ cell[0] }}" data-team="{{ cell[2] }}">
+                            {{ cell[1] }} ({{ cell[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <h3>Target Assignment</h3>
+            <form id="bulk-assignment-form" class="assignment-form">
+                <div class="form-group">
+                    <label for="target-region-select">Target Region:</label>
+                    <select id="target-region-select" name="region_id" class="assignment-select">
+                        <option value="">-- Select Region --</option>
+                        {% for region in regions %}
+                        <option value="{{ region[0] }}">{{ region[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-direction-select">Target Direction:</label>
+                    <select id="target-direction-select" name="direction_id" class="assignment-select">
+                        <option value="">-- Select Direction --</option>
+                        {% for direction in directions %}
+                        <option value="{{ direction[0] }}" data-region="{{ direction[2] }}">
+                            {{ direction[1] }} ({{ direction[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-department-select">Target Department:</label>
+                    <select id="target-department-select" name="department_id" class="assignment-select">
+                        <option value="">-- Select Department --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept[0] }}" data-direction="{{ dept[2] }}">
+                            {{ dept[1] }} ({{ dept[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-team-select">Target Team:</label>
+                    <select id="target-team-select" name="team_id" class="assignment-select">
+                        <option value="">-- Select Team --</option>
+                        {% for team in teams %}
+                        <option value="{{ team[0] }}" data-dept="{{ team[2] }}">
+                            {{ team[1] }} ({{ team[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-cell-select">Target Cell:</label>
+                    <select id="target-cell-select" name="cell_id" class="assignment-select">
+                        <option value="">-- Select Cell --</option>
+                        {% for cell in cells %}
+                        <option value="{{ cell[0] }}" data-team="{{ cell[2] }}">
+                            {{ cell[1] }} ({{ cell[3] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+            
+            <div id="people-list" class="current-assignments">
+                <h3>People to be assigned (<span id="people-count">0</span>):</h3>
+                <div id="bulk-people-list"></div>
+            </div>
+            
+            <div class="assignment-actions">
+                <button id="search-people" class="btn btn-secondary">Search People</button>
+                <button id="save-bulk-assignment" class="btn">Save Assignments</button>
+            </div>
+        </div>
+        
+        <!-- Import CSV/Excel Tab -->
+        <div id="import-tab" class="tab-content">
+            <div class="import-container">
+                <h3>Import Assignments from CSV/Excel</h3>
+                <p>Upload a CSV or Excel file with assignment information to update multiple people at once.</p>
+                
+                <div class="import-instructions">
+                    <h4>File Format Instructions:</h4>
+                    <p>Your file should include the following columns:</p>
+                    <ul>
+                        <li><strong>Required</strong>: At least one of these identifier columns:
+                            <ul>
+                                <li><code>person_id</code> - The database ID of the person</li>
+                                <li><code>first_name</code> and <code>last_name</code> - Full name for matching</li>
+                                <li><code>email</code> - Email address for matching</li>
+                                <li><code>phone</code> - Phone number for matching</li>
+                            </ul>
+                        </li>
+                        <li><strong>Optional</strong>: One or more of these assignment columns:
+                            <ul>
+                                <li><code>cell_name</code> - Name of the cell to assign to</li>
+                                <li><code>team_name</code> - Name of the team to assign to</li>
+                                <li><code>department_name</code> - Name of the department to assign to</li>
+                                <li><code>direction_name</code> - Name of the direction to assign to</li>
+                                <li><code>region_name</code> - Name of the region to assign to</li>
+                                <li><code>is_active</code> - "true" or "false" to set active status</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <p><a href="/download_template" class="btn btn-secondary">Download Template</a></p>
+                </div>
+                
+                <form id="import-form" action="/import_assignments" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="import-file">Select File:</label>
+                        <input type="file" id="import-file" name="import_file" accept=".csv,.xlsx,.xls" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Import Options:</label>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="create-missing" name="create_missing" checked>
+                            <label for="create-missing">Create new records for people not found in database</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="update-existing" name="update_existing" checked>
+                            <label for="update-existing">Update existing records</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="skip-empty" name="skip_empty" checked>
+                            <label for="skip-empty">Skip empty values (don't clear existing values)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Field Matching Behavior:</label>
+                        <div class="radio-container">
+                            <input type="radio" id="match-exact" name="match_type" value="exact" checked>
+                            <label for="match-exact">Exact matching (case-sensitive)</label>
+                        </div>
+                        <div class="radio-container">
+                            <input type="radio" id="match-fuzzy" name="match_type" value="fuzzy">
+                            <label for="match-fuzzy">Fuzzy matching (handles slight differences)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="assignment-actions">
+                        <button type="submit" class="btn">Upload and Process</button>
+                    </div>
+                </form>
+                
+                <div id="import-progress" class="hidden">
+                    <h4>Processing File...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="import-progress-bar"></div>
+                    </div>
+                    <p id="import-status"></p>
+                </div>
+                
+                <div id="import-results" class="hidden">
+                    <h4>Import Results</h4>
+                    <div id="import-summary"></div>
+                    <div id="import-details"></div>
+                    
+                    <div id="created-people-container" class="hidden">
+                        <h4>Newly Created People</h4>
+                        <p>These people were successfully created and are now in the database:</p>
+                        <table class="created-people-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Cell</th>
+                                    <th>Department</th>
+                                    <th>Region</th>
+                                </tr>
+                            </thead>
+                            <tbody id="created-people-list"></tbody>
+                        </table>
+                        
+                        <div class="assignment-actions">
+                            <button type="button" id="manage-created-btn" class="btn">Manage These People</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Verify Person Exists</h3>
+                <p>Use this tool to check if a person exists in the database:</p>
+                
+                <div class="verify-container">
+                    <div class="form-group">
+                        <label for="verify-first-name">First Name:</label>
+                        <input type="text" id="verify-first-name" placeholder="Enter first name...">
+                    </div>
+                    <div class="form-group">
+                        <label for="verify-last-name">Last Name:</label>
+                        <input type="text" id="verify-last-name" placeholder="Enter last name...">
+                    </div>
+                    <button type="button" id="verify-btn" class="btn btn-secondary">Verify Person</button>
+                </div>
+                
+                <div id="verify-results" class="hidden">
+                    <h4>Verification Results</h4>
+                    <div id="verify-message"></div>
+                    <table class="verify-results-table hidden">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Cell</th>
+                                <th>Department</th>
+                                <th>Region</th>
+                                <th>Active</th>
+                            </tr>
+                        </thead>
+                        <tbody id="verify-results-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Update button active state
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Update tab content visibility
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+    });
+    
+    // Person search functionality
+    const personSearch = document.getElementById('person-search');
+    const searchResults = document.getElementById('search-results');
+    
+    personSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        if (query.length < 3) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+        
+        // Fetch search results via AJAX
+        fetch(`/search_people?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.people && data.people.length > 0) {
+                    searchResults.innerHTML = '';
+                    data.people.forEach(person => {
+                        const personElement = document.createElement('div');
+                        personElement.className = 'person-item';
+                        personElement.textContent = `${person.name} (${person.cell || 'No Cell'})`;
+                        personElement.dataset.id = person.id;
+                        personElement.dataset.name = person.name;
+                        personElement.dataset.cell = person.cell_id || '';
+                        personElement.dataset.team = person.team_id || '';
+                        personElement.dataset.department = person.department_id || '';
+                        personElement.dataset.direction = person.direction_id || '';
+                        personElement.dataset.region = person.region_id || '';
+                        personElement.dataset.active = person.is_active;
+                        
+                        personElement.addEventListener('click', function() {
+                            loadPerson(this.dataset);
+                            searchResults.classList.add('hidden');
+                            personSearch.value = '';
+                        });
+                        
+                        searchResults.appendChild(personElement);
+                    });
+                    searchResults.classList.remove('hidden');
+                } else {
+                    searchResults.innerHTML = '<div class="person-item">No people found</div>';
+                    searchResults.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching people:', error);
+                searchResults.innerHTML = '<div class="person-item">Error fetching results</div>';
+                searchResults.classList.remove('hidden');
+            });
+    });
+    
+    // Load person details into form
+    function loadPerson(personData) {
+        document.getElementById('person-id').value = personData.id;
+        document.getElementById('person-name').textContent = personData.name;
+        
+        const currentAssignments = [];
+        if (personData.region) {
+            document.getElementById('region-select').value = personData.region;
+            const regionName = getOptionText('region-select', personData.region);
+            currentAssignments.push(`Region: ${regionName}`);
+        }
+        
+        if (personData.direction) {
+            document.getElementById('direction-select').value = personData.direction;
+            const directionName = getOptionText('direction-select', personData.direction);
+            currentAssignments.push(`Direction: ${directionName}`);
+        }
+        
+        if (personData.department) {
+            document.getElementById('department-select').value = personData.department;
+            const departmentName = getOptionText('department-select', personData.department);
+            currentAssignments.push(`Department: ${departmentName}`);
+        }
+        
+        if (personData.team) {
+            document.getElementById('team-select').value = personData.team;
+            const teamName = getOptionText('team-select', personData.team);
+            currentAssignments.push(`Team: ${teamName}`);
+        }
+        
+        if (personData.cell) {
+            document.getElementById('cell-select').value = personData.cell;
+            const cellName = getOptionText('cell-select', personData.cell);
+            currentAssignments.push(`Cell: ${cellName}`);
+        }
+        
+        document.getElementById('is-active').value = personData.active;
+        
+        document.getElementById('current-assignments').textContent = 
+            currentAssignments.length > 0 ? 
+            `Current: ${currentAssignments.join(' | ')}` : 
+            'No current assignments';
+        
+        document.getElementById('selected-person').classList.remove('hidden');
+    }
+    
+    function getOptionText(selectId, value) {
+        const select = document.getElementById(selectId);
+        for (const option of select.options) {
+            if (option.value === value) {
+                return option.textContent.trim();
+            }
+        }
+        return '';
+    }
+    
+    // Save assignment
+    document.getElementById('save-assignment').addEventListener('click', function() {
+        const form = document.getElementById('assignment-form');
+        const formData = new FormData(form);
+        
+        fetch('/save_assignment', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Assignment saved successfully!');
+                // Reset form
+                document.getElementById('selected-person').classList.add('hidden');
+            } else {
+                alert('Error saving assignment: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving assignment:', error);
+            alert('Error saving assignment. Please try again.');
+        });
+    });
+    
+    // Dynamic filtering for assignment selects
+    function setupDynamicFilters() {
+        // Region change affects directions
+        document.getElementById('region-select').addEventListener('change', function() {
+            const regionId = this.value;
+            const directionSelect = document.getElementById('direction-select');
+            
+            // Reset direction selection
+            directionSelect.value = '';
+            
+            // Show/hide direction options based on region
+            Array.from(directionSelect.options).forEach(option => {
+                if (option.value === '') return; // Skip the placeholder option
+                
+                if (!regionId || option.dataset.region === regionId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Trigger change to update departments
+            directionSelect.dispatchEvent(new Event('change'));
+        });
+        
+        // Direction change affects departments
+        document.getElementById('direction-select').addEventListener('change', function() {
+            const directionId = this.value;
+            const departmentSelect = document.getElementById('department-select');
+            
+            // Reset department selection
+            departmentSelect.value = '';
+            
+            // Show/hide department options based on direction
+            Array.from(departmentSelect.options).forEach(option => {
+                if (option.value === '') return; // Skip the placeholder option
+                
+                if (!directionId || option.dataset.direction === directionId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Trigger change to update teams
+            departmentSelect.dispatchEvent(new Event('change'));
+        });
+        
+        // Department change affects teams
+        document.getElementById('department-select').addEventListener('change', function() {
+            const departmentId = this.value;
+            const teamSelect = document.getElementById('team-select');
+            
+            // Reset team selection
+            teamSelect.value = '';
+            
+            // Show/hide team options based on department
+            Array.from(teamSelect.options).forEach(option => {
+                if (option.value === '') return; // Skip the placeholder option
+                
+                if (!departmentId || option.dataset.dept === departmentId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Trigger change to update cells
+            teamSelect.dispatchEvent(new Event('change'));
+        });
+        
+        // Team change affects cells
+        document.getElementById('team-select').addEventListener('change', function() {
+            const teamId = this.value;
+            const cellSelect = document.getElementById('cell-select');
+            
+            // Reset cell selection
+            cellSelect.value = '';
+            
+            // Show/hide cell options based on team
+            Array.from(cellSelect.options).forEach(option => {
+                if (option.value === '') return; // Skip the placeholder option
+                
+                if (!teamId || option.dataset.team === teamId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Bulk assignments
+    document.getElementById('search-people').addEventListener('click', function() {
+        const region = document.getElementById('bulk-region-filter').value;
+        const direction = document.getElementById('bulk-direction-filter').value;
+        const department = document.getElementById('bulk-department-filter').value;
+        const team = document.getElementById('bulk-team-filter').value;
+        const cell = document.getElementById('bulk-cell-filter').value;
+        
+        // Build query string
+        const params = new URLSearchParams();
+        if (region) params.append('region_id', region);
+        if (direction) params.append('direction_id', direction);
+        if (department) params.append('department_id', department);
+        if (team) params.append('team_id', team);
+        if (cell) params.append('cell_id', cell);
+        
+        // Fetch people via AJAX
+        fetch(`/search_bulk_people?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                const peopleList = document.getElementById('bulk-people-list');
+                peopleList.innerHTML = '';
+                
+                if (data.people && data.people.length > 0) {
+                    document.getElementById('people-count').textContent = data.people.length;
+                    
+                    data.people.forEach(person => {
+                        const personElement = document.createElement('div');
+                        personElement.className = 'person-item';
+                        personElement.innerHTML = `
+                            <input type="checkbox" class="person-checkbox" value="${person.id}" checked>
+                            <span>${person.name} (${person.cell || 'No Cell'})</span>
+                        `;
+                        peopleList.appendChild(personElement);
+                    });
+                } else {
+                    document.getElementById('people-count').textContent = '0';
+                    peopleList.innerHTML = '<div class="person-item">No people found matching criteria</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching people:', error);
+                document.getElementById('people-count').textContent = '0';
+                document.getElementById('bulk-people-list').innerHTML = 
+                    '<div class="person-item">Error fetching results</div>';
+            });
+    });
+    
+    // Save bulk assignments
+    document.getElementById('save-bulk-assignment').addEventListener('click', function() {
+        const checkedPeople = Array.from(document.querySelectorAll('.person-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+        
+        if (checkedPeople.length === 0) {
+            alert('Please select at least one person to assign');
+            return;
+        }
+        
+        const targetRegion = document.getElementById('target-region-select').value;
+        const targetDirection = document.getElementById('target-direction-select').value;
+        const targetDepartment = document.getElementById('target-department-select').value;
+        const targetTeam = document.getElementById('target-team-select').value;
+        const targetCell = document.getElementById('target-cell-select').value;
+        
+        if (!targetRegion && !targetDirection && !targetDepartment && !targetTeam && !targetCell) {
+            alert('Please select at least one target assignment');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('person_ids', JSON.stringify(checkedPeople));
+        if (targetRegion) formData.append('region_id', targetRegion);
+        if (targetDirection) formData.append('direction_id', targetDirection);
+        if (targetDepartment) formData.append('department_id', targetDepartment);
+        if (targetTeam) formData.append('team_id', targetTeam);
+        if (targetCell) formData.append('cell_id', targetCell);
+        
+        fetch('/save_bulk_assignment', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Assignments saved successfully for ${data.count} people!`);
+                // Clear form
+                document.getElementById('bulk-people-list').innerHTML = '';
+                document.getElementById('people-count').textContent = '0';
+            } else {
+                alert('Error saving assignments: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving bulk assignments:', error);
+            alert('Error saving assignments. Please try again.');
+        });
+    });
+    
+    // Setup dynamic filters for both tabs
+    setupDynamicFilters();
+    setupBulkDynamicFilters();
+    
+    function setupBulkDynamicFilters() {
+        // Same dynamic filtering logic as in individual assignments but for bulk filters
+        // Target filters
+        document.getElementById('target-region-select').addEventListener('change', function() {
+            updateFilterOptions('target-direction-select', 'region', this.value);
+        });
+        
+        document.getElementById('target-direction-select').addEventListener('change', function() {
+            updateFilterOptions('target-department-select', 'direction', this.value);
+        });
+        
+        document.getElementById('target-department-select').addEventListener('change', function() {
+            updateFilterOptions('target-team-select', 'dept', this.value);
+        });
+        
+        document.getElementById('target-team-select').addEventListener('change', function() {
+            updateFilterOptions('target-cell-select', 'team', this.value);
+        });
+        
+        // Source filters
+        document.getElementById('bulk-region-filter').addEventListener('change', function() {
+            updateFilterOptions('bulk-direction-filter', 'region', this.value);
+        });
+        
+        document.getElementById('bulk-direction-filter').addEventListener('change', function() {
+            updateFilterOptions('bulk-department-filter', 'direction', this.value);
+        });
+        
+        document.getElementById('bulk-department-filter').addEventListener('change', function() {
+            updateFilterOptions('bulk-team-filter', 'dept', this.value);
+        });
+        
+        document.getElementById('bulk-team-filter').addEventListener('change', function() {
+            updateFilterOptions('bulk-cell-filter', 'team', this.value);
+        });
+    }
+    
+    function updateFilterOptions(selectId, parentAttr, parentValue) {
+        const select = document.getElementById(selectId);
+        select.value = '';
+        
+        Array.from(select.options).forEach(option => {
+            if (option.value === '') return; // Skip the placeholder option
+            
+            if (!parentValue || option.dataset[parentAttr] === parentValue) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // If this select has dependent selects, trigger cascading updates
+        if (selectId === 'target-direction-select' || selectId === 'bulk-direction-filter') {
+            const event = new Event('change');
+            select.dispatchEvent(event);
+        } else if (selectId === 'target-department-select' || selectId === 'bulk-department-filter') {
+            const event = new Event('change');
+            select.dispatchEvent(event);
+        } else if (selectId === 'target-team-select' || selectId === 'bulk-team-filter') {
+            const event = new Event('change');
+            select.dispatchEvent(event);
+        }
+    }
+    
+    // Import form handling
+    const importForm = document.getElementById('import-form');
+    const importProgress = document.getElementById('import-progress');
+    const importResults = document.getElementById('import-results');
+    const importProgressBar = document.getElementById('import-progress-bar');
+    const importStatus = document.getElementById('import-status');
+    const importSummary = document.getElementById('import-summary');
+    const importDetails = document.getElementById('import-details');
+    const createdPeopleContainer = document.getElementById('created-people-container');
+    const createdPeopleList = document.getElementById('created-people-list');
+    
+    if (importForm) {
+        importForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show progress
+            importProgress.classList.remove('hidden');
+            importResults.classList.add('hidden');
+            importProgressBar.style.width = '10%';
+            importStatus.textContent = 'Preparing file upload...';
+            
+            // Create FormData object
+            const formData = new FormData(importForm);
+            
+            // Send the file to the server
+            fetch('/import_assignments', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                importProgressBar.style.width = '50%';
+                importStatus.textContent = 'Processing file...';
+                return response.json();
+            })
+            .then(data => {
+                importProgressBar.style.width = '100%';
+                importProgress.classList.add('hidden');
+                importResults.classList.remove('hidden');
+                
+                if (data.success) {
+                    const results = data.results;
+                    
+                    // Display summary
+                    importSummary.innerHTML = `
+                        <div>Total records: ${results.total}</div>
+                        <div>Updated: ${results.updated}</div>
+                        <div>Created: ${results.created}</div>
+                        <div>Skipped: ${results.skipped}</div>
+                        <div>Errors: ${results.errors}</div>
+                    `;
+                    
+                    // Display details
+                    importDetails.innerHTML = '';
+                    results.details.forEach(detail => {
+                        const detailElement = document.createElement('div');
+                        detailElement.className = `import-${detail.type}`;
+                        detailElement.textContent = detail.message;
+                        importDetails.appendChild(detailElement);
+                    });
+                    
+                    // Display created people
+                    if (data.created_people && data.created_people.length > 0) {
+                        createdPeopleContainer.classList.remove('hidden');
+                        createdPeopleList.innerHTML = '';
+                        data.created_people.forEach(person => {
+                            const personRow = document.createElement('tr');
+                            personRow.innerHTML = `
+                                <td>${person.name || ''}</td>
+                                <td>${person.email || ''}</td>
+                                <td>${person.phone || ''}</td>
+                                <td>${person.cell || ''}</td>
+                                <td>${person.department || ''}</td>
+                                <td>${person.region || ''}</td>
+                            `;
+                            createdPeopleList.appendChild(personRow);
+                        });
+                    } else {
+                        createdPeopleContainer.classList.add('hidden');
+                    }
+                } else {
+                    importSummary.innerHTML = `<div class="import-error">Error: ${data.message}</div>`;
+                    importDetails.innerHTML = '';
+                    createdPeopleContainer.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                importProgressBar.style.width = '100%';
+                importProgress.classList.add('hidden');
+                importResults.classList.remove('hidden');
+                
+                console.error('Error uploading file:', error);
+                importSummary.innerHTML = '<div class="import-error">Error uploading file. Please try again.</div>';
+                importDetails.innerHTML = '';
+                createdPeopleContainer.classList.add('hidden');
+            });
+        });
+    }
+    
+    // Verify person exists
+    const verifyForm = document.getElementById('verify-first-name');
+    const verifyButton = document.getElementById('verify-btn');
+    const verifyResults = document.getElementById('verify-results');
+    const verifyMessage = document.getElementById('verify-message');
+    const verifyResultsList = document.getElementById('verify-results-list');
+    
+    if (verifyButton) {
+        verifyButton.addEventListener('click', function() {
+            const firstName = verifyForm.value.trim();
+            const lastName = document.getElementById('verify-last-name').value.trim();
+            
+            if (!firstName || !lastName) {
+                verifyMessage.textContent = 'Please enter both first and last name';
+                verifyResults.classList.add('hidden');
+                return;
+            }
+            
+            // Fetch person via AJAX
+            fetch(`/verify_person?first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    verifyResults.classList.remove('hidden');
+                    
+                    if (data.success && data.people && data.people.length > 0) {
+                        verifyMessage.innerHTML = `<div class="import-success">Person found in database!</div>`;
+                        document.querySelector('.verify-results-table').classList.remove('hidden');
+                        verifyResultsList.innerHTML = '';
+                        
+                        data.people.forEach(person => {
+                            const personRow = document.createElement('tr');
+                            personRow.innerHTML = `
+                                <td>${person.name || ''}</td>
+                                <td>${person.email || ''}</td>
+                                <td>${person.phone || ''}</td>
+                                <td>${person.cell || ''}</td>
+                                <td>${person.department || ''}</td>
+                                <td>${person.region || ''}</td>
+                                <td>${person.is_active ? 'Yes' : 'No'}</td>
+                            `;
+                            verifyResultsList.appendChild(personRow);
+                        });
+                    } else {
+                        verifyMessage.innerHTML = `<div class="import-error">${data.message || 'Person not found in database'}</div>`;
+                        document.querySelector('.verify-results-table').classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verifying person:', error);
+                    verifyMessage.textContent = 'Error verifying person. Please try again.';
+                    verifyResults.classList.add('hidden');
+                });
+        });
+    }
+});
+</script>
+{% endblock %}
