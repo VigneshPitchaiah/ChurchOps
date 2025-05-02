@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Login - ChurchOps{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">ChurchOps</h1>
+            <p class="login-subtitle">Sign in to your account</p>
+        </div>
+        
+        <div class="login-body">
+            <form action="{{ url_for('auth.login') }}" method="post" class="login-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+                
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" class="form-control" required autofocus>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" name="remember" class="form-check-input">
+                        <span class="form-check-label">Remember me</span>
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                </div>
+            </form>
+            
+            <div class="login-options">
+                <div class="login-divider">
+                    <span>or sign in as</span>
+                </div>
+                
+                <div class="quick-login-buttons">
+                    <button class="btn btn-outline btn-admin" id="admin-login">
+                        <i class="fas fa-user-shield"></i> Admin
+                    </button>
+                    <button class="btn btn-outline btn-user" id="user-login">
+                        <i class="fas fa-user"></i> Regular User
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            <p>ChurchOps Management System</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 4rem);
+        padding: 2rem 0;
+        background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
+    }
+    
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        background-color: var(--white);
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .login-header {
+        padding: 2rem;
+        text-align: center;
+        background-color: var(--bg-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .login-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .login-subtitle {
+        color: var(--text-muted);
+        margin-bottom: 0;
+    }
+    
+    .login-body {
+        padding: 2rem;
+    }
+    
+    .login-form .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .input-with-icon {
+        position: relative;
+    }
+    
+    .input-with-icon i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+    
+    .input-with-icon input {
+        padding-left: 2.5rem;
+    }
+    
+    .btn-block {
+        width: 100%;
+    }
+    
+    .login-divider {
+        display: flex;
+        align-items: center;
+        margin: 1.5rem 0;
+        color: var(--text-muted);
+    }
+    
+    .login-divider:before,
+    .login-divider:after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background-color: var(--border-color);
+    }
+    
+    .login-divider span {
+        padding: 0 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .quick-login-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .quick-login-buttons .btn {
+        flex: 1;
+    }
+    
+    .btn-admin {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .btn-admin:hover {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+    
+    .btn-user {
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+    
+    .btn-user:hover {
+        background-color: var(--success-color);
+        color: var(--white);
+    }
+    
+    .login-footer {
+        padding: 1rem;
+        text-align: center;
+        background-color: var(--bg-color);
+        border-top: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const adminLoginBtn = document.getElementById('admin-login');
+        const userLoginBtn = document.getElementById('user-login');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', function() {
+                usernameInput.value = 'admin';
+                passwordInput.value = 'admin123';
+            });
+        }
+        
+        if (userLoginBtn) {
+            userLoginBtn.addEventListener('click', function() {
+                usernameInput.value = 'user';
+                passwordInput.value = 'user123';
+            });
+        }
+    });
+</script>
+{% endblock %}

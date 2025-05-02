@@ -8,6 +8,9 @@
     <meta name="theme-color" content="#0F172A">
     <title>{% block title %}ChurchOps - Attendance System{% endblock %}</title>
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
     <!-- Critical CSS Inline -->
     <style>
         :root {
@@ -111,6 +114,42 @@
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                             </svg>
                         </button>
+                        
+                        {% if 'user_id' in session %}
+                        <div class="dropdown">
+                            <button class="user-dropdown-btn" id="user-dropdown" aria-label="User menu">
+                                <div class="avatar">
+                                    {% if session.role == 'admin' %}
+                                    <i class="fas fa-user-shield"></i>
+                                    {% else %}
+                                    <i class="fas fa-user"></i>
+                                    {% endif %}
+                                </div>
+                                <span class="user-name">{{ session.username }}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather dropdown-icon">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu" id="user-menu">
+                                <a href="{{ url_for('auth.profile') }}" class="dropdown-item">
+                                    <i class="fas fa-id-card"></i> My Profile
+                                </a>
+                                {% if session.role == 'admin' %}
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-cog"></i> Settings
+                                </a>
+                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ url_for('auth.logout') }}" class="dropdown-item text-danger">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -228,44 +267,67 @@
     <!-- Core JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Sidebar toggle
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const appContainer = document.querySelector('.app-container');
-            
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    appContainer.classList.toggle('sidebar-collapsed');
-                    localStorage.setItem('sidebar-collapsed', appContainer.classList.contains('sidebar-collapsed'));
-                });
-                
-                // Restore sidebar state
-                if (localStorage.getItem('sidebar-collapsed') === 'true') {
-                    appContainer.classList.add('sidebar-collapsed');
+            // Time display
+            function updateTime() {
+                const serverTimeEl = document.getElementById('server-time');
+                if (serverTimeEl) {
+                    const timestamp = new Date(serverTimeEl.dataset.timestamp);
+                    timestamp.setSeconds(timestamp.getSeconds() + 1);
+                    serverTimeEl.dataset.timestamp = timestamp.toISOString();
+                    serverTimeEl.textContent = timestamp.toTimeString().split(' ')[0];
                 }
             }
             
-            // Flash message close buttons
-            const alertCloseButtons = document.querySelectorAll('.alert-close');
-            alertCloseButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const alert = this.closest('.alert');
-                    alert.classList.add('fade-out');
-                    setTimeout(() => alert.remove(), 300);
-                });
-            });
+            setInterval(updateTime, 1000);
             
-            // Server time
-            const serverTimeElement = document.getElementById('server-time');
-            if (serverTimeElement) {
-                const updateTime = () => {
-                    const timestamp = new Date(serverTimeElement.dataset.timestamp);
-                    timestamp.setSeconds(timestamp.getSeconds() + 1);
-                    serverTimeElement.dataset.timestamp = timestamp.toISOString();
-                    serverTimeElement.textContent = timestamp.toLocaleTimeString();
-                };
+            // Sidebar toggle
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('visible');
+                    document.body.classList.toggle('sidebar-open');
+                });
                 
-                setInterval(updateTime, 1000);
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', function(event) {
+                    if (window.innerWidth < 992 && 
+                        sidebar.classList.contains('visible') && 
+                        !sidebar.contains(event.target) && 
+                        !sidebarToggle.contains(event.target)) {
+                        sidebar.classList.remove('visible');
+                        document.body.classList.remove('sidebar-open');
+                    }
+                });
+                
+                // Close sidebar when clicking on nav links on mobile
+                const navLinks = sidebar.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 992) {
+                            sidebar.classList.remove('visible');
+                            document.body.classList.remove('sidebar-open');
+                        }
+                    });
+                });
+            }
+            
+            // User dropdown
+            const userDropdownBtn = document.getElementById('user-dropdown');
+            const userMenu = document.getElementById('user-menu');
+            
+            if (userDropdownBtn && userMenu) {
+                userDropdownBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenu.classList.toggle('show');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!userDropdownBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.remove('show');
+                    }
+                });
             }
         });
     </script>

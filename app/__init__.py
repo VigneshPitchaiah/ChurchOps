@@ -58,6 +58,7 @@ def create_app():
     from app.controllers.saints import saints_bp
     from app.controllers.assignments import assignments_bp
     from app.controllers.reports import reports_bp
+    from app.controllers.auth import auth_bp
     from app.api.routes import api_bp
     
     app.register_blueprint(main_bp)
@@ -66,6 +67,7 @@ def create_app():
     app.register_blueprint(saints_bp)
     app.register_blueprint(assignments_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     
     # Cache headers for better performance in low network areas

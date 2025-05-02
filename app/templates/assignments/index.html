@@ -114,6 +114,54 @@
                                             </select>
                                         </div>
                                     </div>
+                                    
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_direction_id" class="form-label">Direction</label>
+                                            <select name="direction_id" id="bulk_direction_id" class="form-select">
+                                                <option value="">All Directions</option>
+                                                {% for direction in directions %}
+                                                    <option value="{{ direction.direction_id }}" data-region-id="{{ direction.region_id }}">{{ direction.direction_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_department_id" class="form-label">Department</label>
+                                            <select name="department_id" id="bulk_department_id" class="form-select">
+                                                <option value="">All Departments</option>
+                                                {% for department in departments %}
+                                                    <option value="{{ department.department_id }}" data-direction-id="{{ department.direction_id }}">{{ department.department_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_team_id" class="form-label">Team</label>
+                                            <select name="team_id" id="bulk_team_id" class="form-select">
+                                                <option value="">All Teams</option>
+                                                {% for team in teams %}
+                                                    <option value="{{ team.team_id }}" data-department-id="{{ team.department_id }}">{{ team.team_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_cell_id" class="form-label">Cell</label>
+                                            <select name="cell_id" id="bulk_cell_id" class="form-select">
+                                                <option value="">All Cells</option>
+                                                {% for cell in cells %}
+                                                    <option value="{{ cell.cell_id }}" data-team-id="{{ cell.team_id }}">{{ cell.cell_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-actions">
@@ -373,9 +421,17 @@
                     }
                 }
                 
+                // Show loading state
+                searchResultsContainer.innerHTML = '<div class="loading-state">Searching...</div>';
+                
                 // Fetch search results
                 fetch(`/assignments/search?${queryParams.toString()}`)
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Search request failed');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.length === 0) {
                             searchResultsContainer.innerHTML = '<div class="empty-state">No people found matching the search criteria.</div>';
@@ -498,7 +554,6 @@
             });
         }
         
-        // Similar handlers for other hierarchy levels
         if (directionSelect && departmentSelect) {
             directionSelect.addEventListener('change', function() {
                 const directionId = this.value;
@@ -515,6 +570,142 @@
                 departments.forEach(option => {
                     if (option.dataset.directionId === directionId) {
                         departmentSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+        }
+        
+        if (departmentSelect && teamSelect) {
+            departmentSelect.addEventListener('change', function() {
+                const departmentId = this.value;
+                
+                // Reset dependent dropdowns
+                teamSelect.innerHTML = '<option value="">Select Team</option>';
+                cellSelect.innerHTML = '<option value="">Select Cell</option>';
+                
+                if (!departmentId) return;
+                
+                // Add teams for selected department
+                const teams = document.querySelectorAll('option[data-department-id]');
+                teams.forEach(option => {
+                    if (option.dataset.departmentId === departmentId) {
+                        teamSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+        }
+        
+        if (teamSelect && cellSelect) {
+            teamSelect.addEventListener('change', function() {
+                const teamId = this.value;
+                
+                // Reset dependent dropdowns
+                cellSelect.innerHTML = '<option value="">Select Cell</option>';
+                
+                if (!teamId) return;
+                
+                // Add cells for selected team
+                const cells = document.querySelectorAll('option[data-team-id]');
+                cells.forEach(option => {
+                    if (option.dataset.teamId === teamId) {
+                        cellSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+        }
+        
+        // Bulk assignment dropdowns
+        const bulkRegionSelect = document.getElementById('bulk_region_id');
+        const bulkDirectionSelect = document.getElementById('bulk_direction_id');
+        const bulkDepartmentSelect = document.getElementById('bulk_department_id');
+        const bulkTeamSelect = document.getElementById('bulk_team_id');
+        const bulkCellSelect = document.getElementById('bulk_cell_id');
+        
+        // Initialize bulk dependent dropdowns if they exist
+        if (bulkRegionSelect && bulkDirectionSelect) {
+            bulkRegionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                
+                // Reset dependent dropdowns
+                if (bulkDirectionSelect) bulkDirectionSelect.innerHTML = '<option value="">All Directions</option>';
+                if (bulkDepartmentSelect) bulkDepartmentSelect.innerHTML = '<option value="">All Departments</option>';
+                if (bulkTeamSelect) bulkTeamSelect.innerHTML = '<option value="">All Teams</option>';
+                if (bulkCellSelect) bulkCellSelect.innerHTML = '<option value="">All Cells</option>';
+                
+                if (!regionId) return;
+                
+                // Add directions for selected region
+                const directions = document.querySelectorAll('option[data-region-id]');
+                directions.forEach(option => {
+                    if (option.dataset.regionId === regionId) {
+                        const newOption = option.cloneNode(true);
+                        if (bulkDirectionSelect) bulkDirectionSelect.appendChild(newOption);
+                    }
+                });
+            });
+        }
+        
+        // Bulk direction to department
+        if (bulkDirectionSelect && bulkDepartmentSelect) {
+            bulkDirectionSelect.addEventListener('change', function() {
+                const directionId = this.value;
+                
+                // Reset dependent dropdowns
+                if (bulkDepartmentSelect) bulkDepartmentSelect.innerHTML = '<option value="">All Departments</option>';
+                if (bulkTeamSelect) bulkTeamSelect.innerHTML = '<option value="">All Teams</option>';
+                if (bulkCellSelect) bulkCellSelect.innerHTML = '<option value="">All Cells</option>';
+                
+                if (!directionId) return;
+                
+                // Add departments for selected direction
+                const departments = document.querySelectorAll('option[data-direction-id]');
+                departments.forEach(option => {
+                    if (option.dataset.directionId === directionId) {
+                        const newOption = option.cloneNode(true);
+                        if (bulkDepartmentSelect) bulkDepartmentSelect.appendChild(newOption);
+                    }
+                });
+            });
+        }
+        
+        // Bulk department to team
+        if (bulkDepartmentSelect && bulkTeamSelect) {
+            bulkDepartmentSelect.addEventListener('change', function() {
+                const departmentId = this.value;
+                
+                // Reset dependent dropdowns
+                if (bulkTeamSelect) bulkTeamSelect.innerHTML = '<option value="">All Teams</option>';
+                if (bulkCellSelect) bulkCellSelect.innerHTML = '<option value="">All Cells</option>';
+                
+                if (!departmentId) return;
+                
+                // Add teams for selected department
+                const teams = document.querySelectorAll('option[data-department-id]');
+                teams.forEach(option => {
+                    if (option.dataset.departmentId === departmentId) {
+                        const newOption = option.cloneNode(true);
+                        if (bulkTeamSelect) bulkTeamSelect.appendChild(newOption);
+                    }
+                });
+            });
+        }
+        
+        // Bulk team to cell
+        if (bulkTeamSelect && bulkCellSelect) {
+            bulkTeamSelect.addEventListener('change', function() {
+                const teamId = this.value;
+                
+                // Reset dependent dropdowns
+                if (bulkCellSelect) bulkCellSelect.innerHTML = '<option value="">All Cells</option>';
+                
+                if (!teamId) return;
+                
+                // Add cells for selected team
+                const cells = document.querySelectorAll('option[data-team-id]');
+                cells.forEach(option => {
+                    if (option.dataset.teamId === teamId) {
+                        const newOption = option.cloneNode(true);
+                        if (bulkCellSelect) bulkCellSelect.appendChild(newOption);
                     }
                 });
             });
