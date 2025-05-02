@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - ChurchOps{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="col-6 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Attendance by Date</h2>
+            </div>
+            <div class="card-body">
+                <p>View attendance trends over time for different service types.</p>
+                <div class="card-actions">
+                    <a href="{{ url_for('reports.attendance_by_date') }}" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Attendance by Department</h2>
+            </div>
+            <div class="card-body">
+                <p>Compare attendance statistics across different departments.</p>
+                <div class="card-actions">
+                    <a href="{{ url_for('reports.attendance_by_department') }}" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .card-actions {
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}

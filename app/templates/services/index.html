@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Services - ChurchOps{% endblock %}
+
+{% block page_title %}Upcoming Services{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if services %}
+                        {% for service in services %}
+                            <tr>
+                                <td>{{ service.service_name }}</td>
+                                <td>{{ service.service_date.strftime('%d %b %Y') }}</td>
+                                <td>{{ service.service_time.strftime('%I:%M %p') }}</td>
+                                <td>{{ service.notes or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" class="btn btn-primary btn-sm">Mark Attendance</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No upcoming services found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

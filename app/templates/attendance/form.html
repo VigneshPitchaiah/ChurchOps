@@ -1,0 +1,737 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance - ChurchOps{% endblock %}
+
+{% block page_title %}Mark Attendance: {{ service.service_name }} ({{ service.formatted_date }}){% endblock %}
+
+{% block content %}
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <p>Loading data...</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Search People</h2>
+    </div>
+    <div class="card-body">
+        <div class="search-container">
+            <input type="text" id="search-people" class="form-control" placeholder="Search by name..." data-service-id="{{ service.service_id }}">
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Filters</h2>
+    </div>
+    <div class="card-body">
+        <form id="attendance-filter-form" class="no-ajax" action="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" method="get">
+            <div class="grid">
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="name_search" class="form-label">Name</label>
+                        <input type="text" name="name_search" id="name_search" class="form-control" value="{{ filters.name_search }}">
+                    </div>
+                </div>
+                
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="region_id" class="form-label">Region</label>
+                        <select name="region_id" id="region_id" class="form-select">
+                            <option value="">All Regions</option>
+                            {% for region in regions %}
+                                <option value="{{ region.region_id }}" {% if filters.region_id == region.region_id|string %}selected{% endif %}>
+                                    {{ region.region_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="direction_id" class="form-label">Direction</label>
+                        <select name="direction_id" id="direction_id" class="form-select">
+                            <option value="">All Directions</option>
+                            {% for direction in directions %}
+                                <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id|string %}selected{% endif %}>
+                                    {{ direction.direction_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="department_id" class="form-label">Department</label>
+                        <select name="department_id" id="department_id" class="form-select">
+                            <option value="">All Departments</option>
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}" {% if filters.department_id == department.department_id|string %}selected{% endif %}>
+                                    {{ department.department_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid mt-3">
+                <div class="col-4 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="team_id" class="form-label">Team</label>
+                        <select name="team_id" id="team_id" class="form-select">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                                <option value="{{ team.team_id }}" {% if filters.team_id == team.team_id|string %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-4 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="cell_id" class="form-label">Cell</label>
+                        <select name="cell_id" id="cell_id" class="form-select">
+                            <option value="">All Cells</option>
+                            {% for cell in cells %}
+                                <option value="{{ cell.cell_id }}" {% if filters.cell_id == cell.cell_id|string %}selected{% endif %}>
+                                    {{ cell.cell_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-4 col-md-12 col-sm-12">
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" class="btn btn-outline">Reset</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form id="attendance-form" action="{{ url_for('attendance.mark_attendance', service_id=service.service_id) }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Mark Attendance</h2>
+            <div class="attendance-legend">
+                <span class="legend-item"><span class="status-indicator present"></span> Present</span>
+                <span class="legend-item"><span class="status-indicator absent"></span> Absent</span>
+                <span class="legend-item"><span class="status-indicator not-marked"></span> Not Marked</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Status</th>
+                            <th>Name</th>
+                            <th>Cell</th>
+                            <th>Team</th>
+                            <th>Department</th>
+                            <th>Direction</th>
+                            <th>Region</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if organized_people %}
+                            {% set people_list = [] %}
+                            {% for region_name, region_data in organized_people.items() %}
+                                {% for direction_name, direction_data in region_data.directions.items() %}
+                                    {% for department_name, department_data in direction_data.departments.items() %}
+                                        {% for team_name, team_data in department_data.teams.items() %}
+                                            {% for cell_name, cell_data in team_data.cells.items() %}
+                                                {% for person in cell_data.people %}
+                                                    {% set _ = people_list.append({
+                                                        'id': person.id,
+                                                        'name': person.name,
+                                                        'status': person.status|default('not-marked'),
+                                                        'cell': cell_name,
+                                                        'team': team_name,
+                                                        'department': department_name,
+                                                        'direction': direction_name,
+                                                        'region': region_name
+                                                    }) %}
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endfor %}
+                            
+                            {% for person in people_list %}
+                                <tr class="person-row status-{{ person.status }}">
+                                    <td class="text-center">
+                                        <div class="attendance-control">
+                                            <select name="person_status[{{ person.id }}]" class="attendance-select">
+                                                <option value="not-marked" {% if person.status == 'not-marked' %}selected{% endif %}>Not Marked</option>
+                                                <option value="present" {% if person.status == 'present' %}selected{% endif %}>Present</option>
+                                                <option value="absent" {% if person.status == 'absent' %}selected{% endif %}>Absent</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td>{{ person.name }}</td>
+                                    <td>{{ person.cell }}</td>
+                                    <td>{{ person.team }}</td>
+                                    <td>{{ person.department }}</td>
+                                    <td>{{ person.direction }}</td>
+                                    <td>{{ person.region }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">No people found matching the current filters.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary" id="save-attendance-btn">Save Attendance</button>
+            <a href="{{ url_for('services.services_list') }}" class="btn btn-outline">Back to Services</a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .search-container {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 10;
+    }
+    
+    .search-result-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+    }
+    
+    .search-result-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .people-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .marked {
+        background-color: rgba(32, 201, 151, 0.1);
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .person-row:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+    
+    .mt-2 {
+        margin-top: 0.5rem;
+    }
+    
+    .mt-3 {
+        margin-top: 1rem;
+    }
+    
+    .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    
+    /* Make the table header sticky */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+        z-index: 1;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.7);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .loading-overlay.hidden {
+        display: none;
+    }
+    
+    .spinner {
+        border: 8px solid rgba(0, 0, 0, 0.1);
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        animation: spin 2s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .attendance-legend {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+    }
+    
+    .status-indicator.present {
+        background-color: #28a745;
+    }
+    
+    .status-indicator.absent {
+        background-color: #dc3545;
+    }
+    
+    .status-indicator.not-marked {
+        background-color: #6c757d;
+        opacity: 0.5;
+    }
+    
+    .status-present {
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    
+    .status-absent {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .attendance-control {
+        min-width: 120px;
+    }
+    
+    .attendance-select {
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.25rem;
+        border: 1px solid #ced4da;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search-people');
+        const searchResults = document.getElementById('search-results');
+        const serviceId = searchInput?.getAttribute('data-service-id');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const attendanceForm = document.getElementById('attendance-form');
+        const saveButton = document.getElementById('save-attendance-btn');
+        
+        // Only show one loading overlay at a time
+        function showLoading() {
+            if(loadingOverlay) loadingOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            if(loadingOverlay) loadingOverlay.classList.add('hidden');
+        }
+        
+        // Add protection against duplicate loading overlays
+        document.querySelectorAll('.loading-overlay').forEach((overlay, index) => {
+            if (index > 0) overlay.remove();
+        });
+        
+        // Handle search input
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                return;
+            }
+            
+            fetch(`/attendance/search?query=${encodeURIComponent(query)}&service_id=${serviceId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    searchResults.innerHTML = '';
+                    
+                    if (data.results.length === 0) {
+                        searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                        return;
+                    }
+                    
+                    data.results.forEach(person => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'search-result-item';
+                        resultItem.textContent = person.name;
+                        resultItem.setAttribute('data-person-id', person.id);
+                        resultItem.setAttribute('data-marked', person.marked);
+                        
+                        resultItem.addEventListener('click', function() {
+                            const personId = this.getAttribute('data-person-id');
+                            const isMarked = this.getAttribute('data-marked') === 'true';
+                            const checkboxes = document.querySelectorAll(`input[name="person_ids"][value="${personId}"]`);
+                            
+                            checkboxes.forEach(checkbox => {
+                                checkbox.checked = !isMarked;
+                                const row = checkbox.closest('.person-row');
+                                if (row) {
+                                    if (isMarked) {
+                                        row.classList.remove('marked');
+                                    } else {
+                                        row.classList.add('marked');
+                                    }
+                                }
+                            });
+                            
+                            searchInput.value = '';
+                            searchResults.innerHTML = '';
+                        });
+                        
+                        searchResults.appendChild(resultItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error searching people:', error);
+                    searchResults.innerHTML = '<div class="search-result-item">Error loading results</div>';
+                });
+        });
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.innerHTML = '';
+            }
+        });
+        
+        // Reset button functionality
+        const resetButton = document.querySelector('.filter-reset');
+        if(resetButton) {
+            resetButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Clear saved filters in localStorage
+                localStorage.removeItem('attendance_filters_' + serviceId);
+                
+                // Navigate to the reset URL
+                window.location.href = this.getAttribute('href');
+            });
+        }
+        
+        // Save filters in localStorage when applied
+        const filterForm = document.getElementById('attendance-filter-form');
+        if(filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                // Save current filters
+                const filters = {};
+                new FormData(this).forEach((value, key) => {
+                    filters[key] = value;
+                });
+                
+                // Store in localStorage
+                localStorage.setItem('attendance_filters_' + serviceId, JSON.stringify(filters));
+            });
+            
+            // Load filters from localStorage on page load
+            try {
+                const savedFilters = localStorage.getItem('attendance_filters_' + serviceId);
+                if(savedFilters) {
+                    const filters = JSON.parse(savedFilters);
+                    Object.entries(filters).forEach(([key, value]) => {
+                        const input = filterForm.elements[key];
+                        if(input) input.value = value;
+                    });
+                }
+            } catch(e) {
+                console.error('Error loading saved filters:', e);
+            }
+        }
+        
+        // Handle form submission with loading indicator
+        if(attendanceForm) {
+            attendanceForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showLoading();
+                
+                // Submit form via AJAX
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if(data.success) {
+                        alert(data.message || 'Attendance saved successfully');
+                        // Update UI to reflect saved state
+                        updateAttendanceUI(data.attendance);
+                    } else {
+                        alert(data.message || 'Error saving attendance');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error saving attendance:', error);
+                    alert('An error occurred while saving attendance. Please try again.');
+                });
+            });
+        }
+        
+        // Update UI based on attendance data
+        function updateAttendanceUI(attendanceData) {
+            if(!attendanceData) return;
+            
+            // Update rows based on status
+            attendanceData.forEach(item => {
+                const select = document.querySelector(`select[name="person_status[${item.person_id}]"]`);
+                if(select) {
+                    select.value = item.status;
+                    const row = select.closest('tr');
+                    if(row) {
+                        row.className = `person-row status-${item.status}`;
+                    }
+                }
+            });
+        }
+        
+        // Handle attendance status changes
+        document.querySelectorAll('.attendance-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const row = this.closest('tr');
+                if(row) {
+                    // Remove all status classes
+                    row.classList.remove('status-present', 'status-absent', 'status-not-marked');
+                    // Add the new status class
+                    row.classList.add(`status-${this.value}`);
+                }
+            });
+        });
+        
+        // Hierarchical dropdown functionality
+        // Get all dropdown elements
+        const regionSelect = document.getElementById('region_id');
+        const directionSelect = document.getElementById('direction_id');
+        const departmentSelect = document.getElementById('department_id');
+        const teamSelect = document.getElementById('team_id');
+        const cellSelect = document.getElementById('cell_id');
+        
+        // Store all the original options for each dropdown
+        const originalDirections = Array.from(directionSelect.options);
+        const originalDepartments = Array.from(departmentSelect.options);
+        const originalTeams = Array.from(teamSelect.options);
+        const originalCells = Array.from(cellSelect.options);
+        
+        // Function to update dependent dropdowns
+        function updateDropdowns(parentSelect, childSelect, originalOptions, attributeName) {
+            const selectedValue = parentSelect.value;
+            
+            // Clear the child dropdown
+            childSelect.innerHTML = '';
+            
+            // Add the "All" option first
+            childSelect.appendChild(originalOptions[0].cloneNode(true));
+            
+            if (selectedValue) {
+                // Filter and add relevant options
+                originalOptions.forEach(option => {
+                    if (option.value && option.getAttribute(attributeName) === selectedValue) {
+                        childSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            } else {
+                // If no parent selection, add all options
+                originalOptions.forEach((option, index) => {
+                    if (index > 0) { // Skip the first "All" option as it's already added
+                        childSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            }
+            
+            // Trigger change event to cascade down
+            const event = new Event('change');
+            childSelect.dispatchEvent(event);
+        }
+        
+        // Add data attributes to all options to track relationships
+        function initDropdownOptions() {
+            // Before we do anything, we need to add data attributes to each option to track their relationships
+            // The backend needs to be updated to provide these relationships
+            
+            // Create a fetch request to get hierarchical data
+            fetch('/api/organization/hierarchy')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch hierarchy data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Add data-region-id to direction options
+                    originalDirections.forEach(option => {
+                        if (option.value) {
+                            const direction = data.directions.find(d => d.direction_id.toString() === option.value);
+                            if (direction) {
+                                option.setAttribute('data-region-id', direction.region_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-direction-id to department options
+                    originalDepartments.forEach(option => {
+                        if (option.value) {
+                            const department = data.departments.find(d => d.department_id.toString() === option.value);
+                            if (department) {
+                                option.setAttribute('data-direction-id', department.direction_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-department-id to team options
+                    originalTeams.forEach(option => {
+                        if (option.value) {
+                            const team = data.teams.find(t => t.team_id.toString() === option.value);
+                            if (team) {
+                                option.setAttribute('data-department-id', team.department_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-team-id to cell options
+                    originalCells.forEach(option => {
+                        if (option.value) {
+                            const cell = data.cells.find(c => c.cell_id.toString() === option.value);
+                            if (cell) {
+                                option.setAttribute('data-team-id', cell.team_id);
+                            }
+                        }
+                    });
+                    
+                    // Once data is loaded, set up the event listeners
+                    setupDropdownEvents();
+                })
+                .catch(error => {
+                    console.error('Error loading hierarchy data:', error);
+                    // Fallback - just set up events without relationships
+                    setupBasicFilterEvents();
+                });
+        }
+        
+        // Set up event listeners for dropdowns
+        function setupDropdownEvents() {
+            // Region changes affect Directions
+            regionSelect.addEventListener('change', function() {
+                updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
+            });
+            
+            // Direction changes affect Departments
+            directionSelect.addEventListener('change', function() {
+                updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
+            });
+            
+            // Department changes affect Teams
+            departmentSelect.addEventListener('change', function() {
+                updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
+            });
+            
+            // Team changes affect Cells
+            teamSelect.addEventListener('change', function() {
+                updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
+            });
+        }
+        
+        // Fallback method if we can't load hierarchy data
+        function setupBasicFilterEvents() {
+            const form = document.getElementById('attendance-filter-form');
+            regionSelect.addEventListener('change', function() {
+                form.submit();
+            });
+            
+            directionSelect.addEventListener('change', function() {
+                form.submit();
+            });
+            
+            departmentSelect.addEventListener('change', function() {
+                form.submit();
+            });
+            
+            teamSelect.addEventListener('change', function() {
+                form.submit();
+            });
+            
+            cellSelect.addEventListener('change', function() {
+                form.submit();
+            });
+        }
+        
+        // Initialize dropdown options with relationships
+        initDropdownOptions();
+    });
+</script>
+{% endblock %}

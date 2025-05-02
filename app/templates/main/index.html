@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ChurchOps{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Welcome to ChurchOps</h2>
+            </div>
+            <div class="card-body">
+                <p>This system helps you easily mark attendance for church services.</p>
+                
+                <div class="actions" style="margin-top: 1.5rem;">
+                    <a href="{{ url_for('services.services_list') }}" class="btn btn-primary">View Upcoming Services</a>
+                    <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">View Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Quick Guide</h2>
+            </div>
+            <div class="card-body">
+                <ol style="margin-left: 1.5rem;">
+                    <li>Go to <strong>Services</strong> to see upcoming services</li>
+                    <li>Select a service to mark attendance</li>
+                    <li>Check the boxes for people who are present</li>
+                    <li>Use the search box to quickly find people by name</li>
+                    <li>View attendance reports to track participation over time</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

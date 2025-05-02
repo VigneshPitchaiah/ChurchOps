@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Assignments - ChurchOps{% endblock %}
+
+{% block page_title %}Assignments{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="col-6 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Individual Assignment</h2>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('assignments.save_assignment') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="form-group">
+                        <label for="person_search" class="form-label">Search Person</label>
+                        <input type="text" id="person_search" class="form-control" placeholder="Type to search...">
+                        <input type="hidden" id="person_id" name="person_id">
+                        <div id="person_search_results" class="search-results"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="region_id" class="form-label">Region</label>
+                        <select name="region_id" id="region_id" class="form-select">
+                            <option value="">Select Region</option>
+                            {% for region in regions %}
+                                <option value="{{ region.region_id }}">{{ region.region_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="direction_id" class="form-label">Direction</label>
+                        <select name="direction_id" id="direction_id" class="form-select">
+                            <option value="">Select Direction</option>
+                            {% for direction in directions %}
+                                <option value="{{ direction.direction_id }}" data-region-id="{{ direction.region_id }}">{{ direction.direction_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="department_id" class="form-label">Department</label>
+                        <select name="department_id" id="department_id" class="form-select">
+                            <option value="">Select Department</option>
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}" data-direction-id="{{ department.direction_id }}">{{ department.department_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="team_id" class="form-label">Team</label>
+                        <select name="team_id" id="team_id" class="form-select">
+                            <option value="">Select Team</option>
+                            {% for team in teams %}
+                                <option value="{{ team.team_id }}" data-department-id="{{ team.department_id }}">{{ team.team_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cell_id" class="form-label">Cell</label>
+                        <select name="cell_id" id="cell_id" class="form-select">
+                            <option value="">Select Cell</option>
+                            {% for cell in cells %}
+                                <option value="{{ cell.cell_id }}" data-team-id="{{ cell.team_id }}">{{ cell.cell_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Assignment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Bulk Assignment</h2>
+            </div>
+            <div class="card-body">
+                <div class="tabs">
+                    <div class="tab-nav">
+                        <button class="tab-btn active" data-tab="search">Search & Assign</button>
+                        <button class="tab-btn" data-tab="import">Import</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="search-tab">
+                            <form id="search-form" action="{{ url_for('assignments.search_bulk_people') }}" method="get">
+                                <div class="grid">
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_name_search" class="form-label">Name</label>
+                                            <input type="text" name="name_search" id="bulk_name_search" class="form-control">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-6 col-md-12">
+                                        <div class="form-group">
+                                            <label for="bulk_region_id" class="form-label">Region</label>
+                                            <select name="region_id" id="bulk_region_id" class="form-select">
+                                                <option value="">All Regions</option>
+                                                {% for region in regions %}
+                                                    <option value="{{ region.region_id }}">{{ region.region_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                </div>
+                            </form>
+                            
+                            <div id="search-results" class="search-results-container">
+                                <!-- Search results will be loaded here -->
+                            </div>
+                            
+                            <form id="bulk-assign-form" action="{{ url_for('assignments.save_bulk_assignment') }}" method="post" style="display: none;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div id="selected-people"></div>
+                                
+                                <div class="form-group">
+                                    <label for="bulk_cell_id" class="form-label">Assign to Cell</label>
+                                    <select name="cell_id" id="bulk_cell_id" class="form-select" required>
+                                        <option value="">Select Cell</option>
+                                        {% for cell in cells %}
+                                            <option value="{{ cell.cell_id }}">
+                                                {{ cell.cell_name }} ({{ cell.team.team_name }} / {{ cell.team.department.department_name }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Assign Selected People</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="tab-pane" id="import-tab">
+                            <div class="import-instructions">
+                                <p>Upload a CSV or Excel file with assignment data. The file should have the following columns:</p>
+                                <ul>
+                                    <li>First Name</li>
+                                    <li>Last Name</li>
+                                    <li>Region</li>
+                                    <li>Direction</li>
+                                    <li>Department</li>
+                                    <li>Team</li>
+                                    <li>Cell</li>
+                                </ul>
+                                <p>Optional columns: Email, Phone</p>
+                                
+                                <a href="{{ url_for('assignments.download_template') }}" class="btn btn-outline">Download Template</a>
+                            </div>
+                            
+                            <form action="{{ url_for('assignments.import_assignments') }}" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="form-group">
+                                    <label for="file" class="form-label">Upload File</label>
+                                    <input type="file" name="file" id="file" class="form-control" accept=".csv,.xlsx">
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Import</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .search-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .search-result-item:hover {
+        background-color: var(--bg-color);
+    }
+    
+    .search-results-container {
+        margin-top: 1.5rem;
+    }
+    
+    .tabs {
+        margin-top: 1rem;
+    }
+    
+    .tab-nav {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+    }
+    
+    .tab-btn {
+        padding: 0.75rem 1rem;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--text-light);
+    }
+    
+    .tab-btn.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+    
+    .tab-pane {
+        display: none;
+    }
+    
+    .tab-pane.active {
+        display: block;
+    }
+    
+    .import-instructions {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background-color: var(--bg-color);
+        border-radius: 0.5rem;
+    }
+    
+    .import-instructions ul {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show active tab pane
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('active');
+                    if (pane.id === tabId + '-tab') {
+                        pane.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // Person search
+        const personSearch = document.getElementById('person_search');
+        const personId = document.getElementById('person_id');
+        const searchResults = document.getElementById('person_search_results');
+        
+        if (personSearch) {
+            personSearch.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+                
+                // Fetch search results
+                fetch(`/api/people/search?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length === 0) {
+                            searchResults.innerHTML = '<div class="search-empty">No results found</div>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        data.forEach(person => {
+                            html += `
+                                <div class="search-result-item" data-id="${person.id}" data-name="${person.name}">
+                                    <div class="search-result-name">${person.name}</div>
+                                    <div class="search-result-path">
+                                        ${person.region} &raquo; ${person.direction} &raquo; 
+                                        ${person.department} &raquo; ${person.team} &raquo; ${person.cell}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        searchResults.innerHTML = html;
+                        
+                        // Add click handlers
+                        document.querySelectorAll('.search-result-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const id = this.dataset.id;
+                                const name = this.dataset.name;
+                                
+                                personId.value = id;
+                                personSearch.value = name;
+                                searchResults.innerHTML = '';
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResults.innerHTML = '<div class="search-error">Error searching for people</div>';
+                    });
+            });
+            
+            // Close results when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!personSearch.contains(event.target) && !searchResults.contains(event.target)) {
+                    searchResults.innerHTML = '';
+                }
+            });
+        }
+        
+        // Bulk search form
+        const searchForm = document.getElementById('search-form');
+        const searchResultsContainer = document.getElementById('search-results');
+        const bulkAssignForm = document.getElementById('bulk-assign-form');
+        const selectedPeopleContainer = document.getElementById('selected-people');
+        
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const queryParams = new URLSearchParams();
+                
+                for (const [key, value] of formData.entries()) {
+                    if (value) {
+                        queryParams.append(key, value);
+                    }
+                }
+                
+                // Fetch search results
+                fetch(`/assignments/search?${queryParams.toString()}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length === 0) {
+                            searchResultsContainer.innerHTML = '<div class="empty-state">No people found matching the search criteria.</div>';
+                            bulkAssignForm.style.display = 'none';
+                            return;
+                        }
+                        
+                        let html = `
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="form-check">
+                                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                                    <span class="form-check-label">Select All</span>
+                                                </label>
+                                            </th>
+                                            <th>Name</th>
+                                            <th>Current Assignment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        data.forEach(person => {
+                            html += `
+                                <tr>
+                                    <td>
+                                        <label class="form-check">
+                                            <input type="checkbox" name="person_checkbox" class="form-check-input person-checkbox" value="${person.id}">
+                                            <span class="form-check-label"></span>
+                                        </label>
+                                    </td>
+                                    <td>${person.name}</td>
+                                    <td>
+                                        ${person.cell.name} / ${person.team.name} / ${person.department.name}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        
+                        searchResultsContainer.innerHTML = html;
+                        
+                        // Show bulk assign form
+                        bulkAssignForm.style.display = 'block';
+                        
+                        // Select all checkbox
+                        const selectAll = document.getElementById('select-all');
+                        const personCheckboxes = document.querySelectorAll('.person-checkbox');
+                        
+                        selectAll.addEventListener('change', function() {
+                            personCheckboxes.forEach(checkbox => {
+                                checkbox.checked = this.checked;
+                            });
+                            updateSelectedPeople();
+                        });
+                        
+                        // Individual checkboxes
+                        personCheckboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', updateSelectedPeople);
+                        });
+                        
+                        // Initial update
+                        updateSelectedPeople();
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResultsContainer.innerHTML = '<div class="error-state">Error searching for people. Please try again.</div>';
+                    });
+            });
+        }
+        
+        // Update selected people hidden inputs
+        function updateSelectedPeople() {
+            const checkboxes = document.querySelectorAll('.person-checkbox:checked');
+            selectedPeopleContainer.innerHTML = '';
+            
+            checkboxes.forEach(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'person_ids';
+                input.value = checkbox.value;
+                selectedPeopleContainer.appendChild(input);
+            });
+        }
+        
+        // Dependent dropdowns
+        const regionSelect = document.getElementById('region_id');
+        const directionSelect = document.getElementById('direction_id');
+        const departmentSelect = document.getElementById('department_id');
+        const teamSelect = document.getElementById('team_id');
+        const cellSelect = document.getElementById('cell_id');
+        
+        if (regionSelect && directionSelect) {
+            regionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                
+                // Reset dependent dropdowns
+                directionSelect.innerHTML = '<option value="">Select Direction</option>';
+                departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                teamSelect.innerHTML = '<option value="">Select Team</option>';
+                cellSelect.innerHTML = '<option value="">Select Cell</option>';
+                
+                if (!regionId) return;
+                
+                // Add directions for selected region
+                const directions = document.querySelectorAll('option[data-region-id]');
+                directions.forEach(option => {
+                    if (option.dataset.regionId === regionId) {
+                        directionSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+        }
+        
+        // Similar handlers for other hierarchy levels
+        if (directionSelect && departmentSelect) {
+            directionSelect.addEventListener('change', function() {
+                const directionId = this.value;
+                
+                // Reset dependent dropdowns
+                departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                teamSelect.innerHTML = '<option value="">Select Team</option>';
+                cellSelect.innerHTML = '<option value="">Select Cell</option>';
+                
+                if (!directionId) return;
+                
+                // Add departments for selected direction
+                const departments = document.querySelectorAll('option[data-direction-id]');
+                departments.forEach(option => {
+                    if (option.dataset.directionId === directionId) {
+                        departmentSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

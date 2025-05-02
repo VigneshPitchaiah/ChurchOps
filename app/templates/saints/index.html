@@ -1,0 +1,661 @@
+{% extends "base.html" %}
+
+{% block title %}Saints - ChurchOps{% endblock %}
+
+{% block page_title %}Saints{% endblock %}
+
+{% block content %}
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <p>Loading data...</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Filters</h2>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" action="{{ url_for('saints.saints_list') }}" method="get" class="ajax-form">
+            <div class="grid">
+                <div class="col-4 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="name_search" class="form-label">Name</label>
+                        <input type="text" name="name_search" id="name_search" class="form-control" value="{{ filters.name_search }}">
+                    </div>
+                </div>
+                
+                <div class="col-4 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="is_active" class="form-label">Status</label>
+                        <select name="is_active" id="is_active" class="form-select">
+                            <option value="true" {% if filters.is_active == true %}selected{% endif %}>Active</option>
+                            <option value="false" {% if filters.is_active == false %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid mt-3">
+                <div class="col-2 col-md-4 col-sm-12">
+                    <div class="form-group">
+                        <label for="region_id" class="form-label">Region</label>
+                        <select name="region_id" id="region_id" class="form-select">
+                            <option value="">All Regions</option>
+                            {% for region in regions %}
+                                <option value="{{ region.region_id }}" {% if filters.region_id == region.region_id %}selected{% endif %}>
+                                    {{ region.region_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-2 col-md-4 col-sm-12">
+                    <div class="form-group">
+                        <label for="direction_id" class="form-label">Direction</label>
+                        <select name="direction_id" id="direction_id" class="form-select">
+                            <option value="">All Directions</option>
+                            {% for direction in directions %}
+                                <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id %}selected{% endif %}>
+                                    {{ direction.direction_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-2 col-md-4 col-sm-12">
+                    <div class="form-group">
+                        <label for="department_id" class="form-label">Department</label>
+                        <select name="department_id" id="department_id" class="form-select">
+                            <option value="">All Departments</option>
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}" {% if filters.department_id == department.department_id %}selected{% endif %}>
+                                    {{ department.department_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="team_id" class="form-label">Team</label>
+                        <select name="team_id" id="team_id" class="form-select">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                                <option value="{{ team.team_id }}" {% if filters.team_id == team.team_id %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-3 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="cell_id" class="form-label">Cell</label>
+                        <select name="cell_id" id="cell_id" class="form-select">
+                            <option value="">All Cells</option>
+                            {% for cell in cells %}
+                                <option value="{{ cell.cell_id }}" {% if filters.cell_id == cell.cell_id %}selected{% endif %}>
+                                    {{ cell.cell_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{{ url_for('saints.saints_list') }}" class="btn btn-outline filter-reset">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Saints</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Cell</th>
+                        <th>Team</th>
+                        <th>Department</th>
+                        <th>Direction</th>
+                        <th>Region</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="saints-table-body">
+                    {% if people %}
+                        {% for person in people %}
+                            <tr>
+                                <td>{{ person.first_name }} {{ person.last_name }}</td>
+                                <td>{{ person.cell.cell_name }}</td>
+                                <td>{{ person.cell.team.team_name }}</td>
+                                <td>{{ person.cell.team.department.department_name }}</td>
+                                <td>{{ person.cell.team.department.direction.direction_name }}</td>
+                                <td>{{ person.cell.team.department.direction.region.region_name }}</td>
+                                <td>
+                                    <span class="badge {% if person.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                                        {{ 'Active' if person.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No saints found matching the current filters.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+            <div class="pagination" id="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ pagination.page }} of {{ pagination.pages }} pages
+                </div>
+                <div class="pagination-controls">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('saints.saints_list', page=pagination.prev_num, **filters) }}" class="btn btn-outline btn-sm pagination-prev">Previous</a>
+                    {% else %}
+                        <button class="btn btn-outline btn-sm" disabled>Previous</button>
+                    {% endif %}
+                    
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('saints.saints_list', page=pagination.next_num, **filters) }}" class="btn btn-outline btn-sm pagination-next">Next</a>
+                    {% else %}
+                        <button class="btn btn-outline btn-sm" disabled>Next</button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    
+    .pagination-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .mt-3 {
+        margin-top: 1rem;
+    }
+    
+    .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    
+    /* Make the table header sticky */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+        z-index: 1;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Loading overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.5);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #3b82f6;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 1rem;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filter-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const tableBody = document.getElementById('saints-table-body');
+        
+        // Get filter elements for easy access
+        const filterElements = {
+            nameSearch: document.getElementById('name_search'),
+            isActive: document.getElementById('is_active'),
+            regionId: document.getElementById('region_id'),
+            directionId: document.getElementById('direction_id'),
+            departmentId: document.getElementById('department_id'),
+            teamId: document.getElementById('team_id'),
+            cellId: document.getElementById('cell_id')
+        };
+        
+        // LOADING OVERLAY MANAGEMENT
+        // Only show one loading overlay at a time
+        function showLoading() {
+            if(loadingOverlay) loadingOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            if(loadingOverlay) loadingOverlay.classList.add('hidden');
+        }
+        
+        // Add protection against duplicate loading overlays
+        document.querySelectorAll('.loading-overlay').forEach((overlay, index) => {
+            if (index > 0) overlay.remove();
+        });
+        
+        // FILTER RESET FUNCTIONALITY
+        // Handle the reset button click
+        const resetButton = document.querySelector('.filter-reset');
+        if(resetButton) {
+            resetButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Clear saved filters
+                clearSavedFilters();
+                
+                // Navigate to the reset URL
+                window.location.href = this.getAttribute('href');
+            });
+        }
+        
+        // Load saved filters from localStorage
+        function loadSavedFilters() {
+            const savedFilters = JSON.parse(localStorage.getItem('saintsFilters') || '{}');
+            
+            // Apply saved filters to form elements
+            if (savedFilters.nameSearch) filterElements.nameSearch.value = savedFilters.nameSearch;
+            if (savedFilters.isActive) filterElements.isActive.value = savedFilters.isActive;
+            if (savedFilters.regionId) filterElements.regionId.value = savedFilters.regionId;
+            if (savedFilters.directionId) filterElements.directionId.value = savedFilters.directionId;
+            if (savedFilters.departmentId) filterElements.departmentId.value = savedFilters.departmentId;
+            if (savedFilters.teamId) filterElements.teamId.value = savedFilters.teamId;
+            if (savedFilters.cellId) filterElements.cellId.value = savedFilters.cellId;
+            
+            // If we have saved filters, load the data with them
+            if (Object.keys(savedFilters).length > 0) {
+                loadFilteredData();
+            }
+        }
+        
+        // Save current filters to localStorage
+        function saveFilters() {
+            const currentFilters = {
+                nameSearch: filterElements.nameSearch.value,
+                isActive: filterElements.isActive.value,
+                regionId: filterElements.regionId.value,
+                directionId: filterElements.directionId.value,
+                departmentId: filterElements.departmentId.value,
+                teamId: filterElements.teamId.value,
+                cellId: filterElements.cellId.value
+            };
+            
+            localStorage.setItem('saintsFilters', JSON.stringify(currentFilters));
+        }
+        
+        // Clear saved filters
+        function clearSavedFilters() {
+            localStorage.removeItem('saintsFilters');
+        }
+        
+        // Load data with current filters
+        async function loadFilteredData(page = 1) {
+            // Show loading overlay
+            showLoading();
+            
+            // Collect all form data
+            const formData = new FormData(filterForm);
+            formData.append('page', page);
+            formData.append('ajax', 'true');
+            
+            // Convert to query string
+            const queryParams = new URLSearchParams(formData).toString();
+            
+            try {
+                // Fetch the filtered data
+                const response = await fetch(filterForm.action + '?' + queryParams, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                
+                // Update the table
+                if (data.html) {
+                    tableBody.innerHTML = data.html;
+                } else if (data.people) {
+                    // Fallback if we don't get HTML but get raw data
+                    if (data.people.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No saints found matching the current filters.</td></tr>';
+                    } else {
+                        tableBody.innerHTML = '';
+                        data.people.forEach(person => {
+                            tableBody.innerHTML += `
+                                <tr>
+                                    <td>${person.first_name} ${person.last_name}</td>
+                                    <td>${person.cell}</td>
+                                    <td>${person.team}</td>
+                                    <td>${person.department}</td>
+                                    <td>${person.direction}</td>
+                                    <td>${person.region}</td>
+                                    <td>
+                                        <span class="badge ${person.is_active ? 'badge-success' : 'badge-danger'}">
+                                            ${person.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+                }
+                
+                // Update pagination if present
+                const paginationContainer = document.getElementById('pagination-container');
+                if (paginationContainer && data.pagination) {
+                    if (data.pagination_html) {
+                        paginationContainer.innerHTML = data.pagination_html;
+                        
+                        // Update pagination event listeners
+                        setupPaginationListeners();
+                    } else {
+                        // Manual update if no HTML provided
+                        const paginationInfo = paginationContainer.querySelector('.pagination-info');
+                        if (paginationInfo) {
+                            paginationInfo.textContent = `Showing ${data.pagination.page} of ${data.pagination.pages} pages`;
+                        }
+                        
+                        const prevButton = paginationContainer.querySelector('.pagination-prev');
+                        const nextButton = paginationContainer.querySelector('.pagination-next');
+                        
+                        if (prevButton && nextButton) {
+                            prevButton.href = filterForm.action + '?' + queryParams.replace(`page=${page}`, `page=${data.pagination.prev_num}`);
+                            nextButton.href = filterForm.action + '?' + queryParams.replace(`page=${page}`, `page=${data.pagination.next_num}`);
+                            
+                            prevButton.disabled = !data.pagination.has_prev;
+                            nextButton.disabled = !data.pagination.has_next;
+                        }
+                    }
+                }
+                
+                // Update URL without refreshing
+                const newUrl = filterForm.action + '?' + queryParams.replace('&ajax=true', '');
+                window.history.replaceState({ path: newUrl }, '', newUrl);
+                
+                // Save filters to localStorage
+                saveFilters();
+                
+            } catch (error) {
+                console.error('Error loading filtered data:', error);
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center">An error occurred while loading data.</td></tr>';
+            } finally {
+                // Hide loading overlay
+                hideLoading();
+            }
+        }
+        
+        // Handle form submission
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            loadFilteredData();
+        });
+        
+        // Set up pagination event listeners
+        function setupPaginationListeners() {
+            const paginationLinks = document.querySelectorAll('.pagination-controls a');
+            
+            paginationLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Extract page number from href
+                    const url = new URL(this.href);
+                    const page = url.searchParams.get('page') || 1;
+                    
+                    // Load the data for this page
+                    loadFilteredData(page);
+                });
+            });
+        }
+        
+        // Add change event listeners to form inputs for real-time filtering
+        const formInputs = [
+            filterElements.nameSearch,
+            filterElements.isActive,
+            filterElements.regionId,
+            filterElements.directionId,
+            filterElements.departmentId,
+            filterElements.teamId,
+            filterElements.cellId
+        ];
+        
+        // Setup debounce function
+        function debounce(func, wait = 300) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Add debounced event listeners to form inputs
+        formInputs.forEach(input => {
+            if (input) {
+                // Use input event for text fields, change for dropdowns
+                const eventType = input.tagName === 'INPUT' && input.type === 'text' ? 'input' : 'change';
+                input.addEventListener(eventType, debounce(() => {
+                    loadFilteredData();
+                }, input.type === 'text' ? 500 : 300));
+            }
+        });
+        
+        // Set up hierarchical dropdown behavior
+        // Get all dropdown elements for hierarchy
+        const regionSelect = document.getElementById('region_id');
+        const directionSelect = document.getElementById('direction_id');
+        const departmentSelect = document.getElementById('department_id');
+        const teamSelect = document.getElementById('team_id');
+        const cellSelect = document.getElementById('cell_id');
+        
+        // Store all the original options for each dropdown
+        const originalDirections = Array.from(directionSelect.options);
+        const originalDepartments = Array.from(departmentSelect.options);
+        const originalTeams = Array.from(teamSelect.options);
+        const originalCells = Array.from(cellSelect.options);
+        
+        // Initialize dropdown options with relationships
+        initDropdownOptions();
+        
+        // Function to update dependent dropdowns
+        function updateDropdowns(parentSelect, childSelect, originalOptions, attributeName) {
+            const selectedValue = parentSelect.value;
+            
+            // Clear the child dropdown
+            childSelect.innerHTML = '';
+            
+            // Add the "All" option first
+            childSelect.appendChild(originalOptions[0].cloneNode(true));
+            
+            if (selectedValue) {
+                // Filter and add relevant options
+                originalOptions.forEach(option => {
+                    if (option.value && option.getAttribute(attributeName) === selectedValue) {
+                        childSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            } else {
+                // If no parent selection, add all options
+                originalOptions.forEach((option, index) => {
+                    if (index > 0) { // Skip the first "All" option as it's already added
+                        childSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            }
+            
+            // Trigger change event to cascade down
+            const event = new Event('change');
+            childSelect.dispatchEvent(event);
+        }
+        
+        // Add data attributes to all options to track relationships
+        function initDropdownOptions() {
+            // Create a fetch request to get hierarchical data
+            fetch('/api/organization/hierarchy')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch hierarchy data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Add data-region-id to direction options
+                    originalDirections.forEach(option => {
+                        if (option.value) {
+                            const direction = data.directions.find(d => d.direction_id.toString() === option.value);
+                            if (direction) {
+                                option.setAttribute('data-region-id', direction.region_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-direction-id to department options
+                    originalDepartments.forEach(option => {
+                        if (option.value) {
+                            const department = data.departments.find(d => d.department_id.toString() === option.value);
+                            if (department) {
+                                option.setAttribute('data-direction-id', department.direction_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-department-id to team options
+                    originalTeams.forEach(option => {
+                        if (option.value) {
+                            const team = data.teams.find(t => t.team_id.toString() === option.value);
+                            if (team) {
+                                option.setAttribute('data-department-id', team.department_id);
+                            }
+                        }
+                    });
+                    
+                    // Add data-team-id to cell options
+                    originalCells.forEach(option => {
+                        if (option.value) {
+                            const cell = data.cells.find(c => c.cell_id.toString() === option.value);
+                            if (cell) {
+                                option.setAttribute('data-team-id', cell.team_id);
+                            }
+                        }
+                    });
+                    
+                    // Once data is loaded, set up the event listeners
+                    setupDropdownEvents();
+                    
+                    // Apply any saved filters after relationships are set up
+                    loadSavedFilters();
+                })
+                .catch(error => {
+                    console.error('Error loading hierarchy data:', error);
+                    // Still load saved filters even if we can't get hierarchy data
+                    loadSavedFilters();
+                });
+        }
+        
+        // Set up event listeners for dropdowns
+        function setupDropdownEvents() {
+            // Region changes affect Directions
+            regionSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
+                updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
+            });
+            
+            // Direction changes affect Departments
+            directionSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
+                updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
+            });
+            
+            // Department changes affect Teams
+            departmentSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
+                updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
+            });
+            
+            // Team changes affect Cells
+            teamSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
+                updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
+            });
+        }
+        
+        // Initialize pagination listeners
+        setupPaginationListeners();
+        
+        // Load saved filters
+        loadSavedFilters();
+    });
+</script>
+{% endblock %}
