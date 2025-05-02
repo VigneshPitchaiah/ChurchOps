@@ -5,6 +5,7 @@ from app.models.organization import Region, Direction, Department, Team, Cell
 from sqlalchemy import or_, func
 from app.services.cache_service import cache_view, invalidate_cache
 from datetime import datetime
+import math
 
 # Create blueprint
 saints_bp = Blueprint('saints', __name__, url_prefix='/saints')
@@ -202,7 +203,7 @@ def saints_list():
             people_data.append({
                 'person_id': person.person_id,
                 'first_name': person.first_name,
-                'last_name': person.last_name,
+                'last_name': '' if isinstance(person.last_name, float) and math.isnan(person.last_name) else person.last_name,
                 'is_active': person.is_active,
                 'cell': person.cell.cell_name,
                 'team': person.cell.team.team_name,

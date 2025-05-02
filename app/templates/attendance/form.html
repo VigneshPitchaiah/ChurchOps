@@ -52,9 +52,9 @@
                 
                 <div class="col-3 col-md-6 col-sm-12">
                     <div class="form-group">
-                        <label for="direction_id" class="form-label">Direction</label>
+                        <label for="direction_id" class="form-label">Region Specific</label>
                         <select name="direction_id" id="direction_id" class="form-select">
-                            <option value="">All Directions</option>
+                            <option value="">All Specific</option>
                             {% for direction in directions %}
                                 <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id|string %}selected{% endif %}>
                                     {{ direction.direction_name }}
@@ -141,7 +141,7 @@
                             <th>Cell</th>
                             <th>Team</th>
                             <th>Department</th>
-                            <th>Direction</th>
+                            <th>Region Specific</th>
                             <th>Region</th>
                         </tr>
                     </thead>

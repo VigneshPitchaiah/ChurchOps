@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
+
 from app import db, cache
 from app.models.services import Service, ServiceType, Attendance
 from app.models.people import Person
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 reports_bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 @reports_bp.route('/')
+
 @cache_view(timeout=60)
 def reports_index():
     """Show report options"""
@@ -28,6 +30,7 @@ def reports_index():
     )
 
 @reports_bp.route('/attendance-by-date')
+
 @cache_view(timeout=60)
 def attendance_by_date():
     """Get attendance statistics by date"""
@@ -103,6 +106,7 @@ def attendance_by_date():
     )
 
 @reports_bp.route('/attendance-by-department')
+
 @cache_view(timeout=60)
 def attendance_by_department():
     """Get attendance statistics by department"""
@@ -180,6 +184,7 @@ def attendance_by_department():
     )
 
 @reports_bp.route('/api/attendance-data')
+
 def api_attendance_data():
     """API endpoint for attendance data"""
     # Parse date range parameters

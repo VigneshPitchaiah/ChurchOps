@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify
+
 from app.models.organization import Region, Direction, Department, Team, Cell
 
 # Create the API blueprint

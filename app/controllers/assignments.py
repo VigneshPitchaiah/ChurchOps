@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
+
 from app import db, cache
 from app.models.people import Person
 from app.models.organization import Region, Direction, Department, Team, Cell
@@ -14,6 +15,7 @@ from werkzeug.utils import secure_filename
 assignments_bp = Blueprint('assignments', __name__, url_prefix='/assignments')
 
 @assignments_bp.route('/')
+
 def assignments_index():
     """Assignment management page"""
     # Get dropdown data for filters
@@ -34,6 +36,7 @@ def assignments_index():
     )
 
 @assignments_bp.route('/search', methods=['GET'])
+
 def search_bulk_people():
     """Search for people based on their assignments"""
     # Get filter parameters
@@ -116,6 +119,7 @@ def search_bulk_people():
     return jsonify(results)
 
 @assignments_bp.route('/save', methods=['POST'])
+
 def save_assignment():
     """Save individual person assignment"""
     person_id = request.form.get('person_id', type=int)
@@ -139,6 +143,7 @@ def save_assignment():
     return redirect(url_for('assignments.assignments_index'))
 
 @assignments_bp.route('/bulk-save', methods=['POST'])
+
 def save_bulk_assignment():
     """Save bulk assignments for multiple people"""
     person_ids = request.form.getlist('person_ids')
@@ -163,6 +168,7 @@ def save_bulk_assignment():
     return redirect(url_for('assignments.assignments_index'))
 
 @assignments_bp.route('/template')
+
 def download_template():
     """Download a CSV template for assignment imports"""
     # Create a StringIO object
@@ -187,6 +193,7 @@ def download_template():
     )
 
 @assignments_bp.route('/import', methods=['POST'])
+
 def import_assignments():
     """Process uploaded CSV/Excel file for assignments"""
     if 'file' not in request.files:
@@ -225,9 +232,15 @@ def import_assignments():
         
         for index, row in df.iterrows():
             try:
-                # Check if person exists
+                # Check if person exists and handle NaN values
                 first_name = row['First Name']
                 last_name = row['Last Name']
+                
+                # Convert NaN values to empty string for string fields
+                first_name = '' if pd.isna(first_name) else str(first_name)
+                last_name = '' if pd.isna(last_name) else str(last_name)
+                email = '' if pd.isna(row.get('Email')) else str(row.get('Email'))
+                phone = '' if pd.isna(row.get('Phone')) else str(row.get('Phone'))
                 
                 person = Person.query.filter(
                     Person.first_name == first_name,
@@ -237,11 +250,11 @@ def import_assignments():
                 # If person doesn't exist, create them
                 if not person:
                     # Get or create organizational units
-                    region_name = row['Region']
-                    direction_name = row['Direction']
-                    department_name = row['Department']
-                    team_name = row['Team']
-                    cell_name = row['Cell']
+                    region_name = str(row['Region']) if pd.notna(row['Region']) else ''
+                    direction_name = str(row['Direction']) if pd.notna(row['Direction']) else ''
+                    department_name = str(row['Department']) if pd.notna(row['Department']) else ''
+                    team_name = str(row['Team']) if pd.notna(row['Team']) else ''
+                    cell_name = str(row['Cell']) if pd.notna(row['Cell']) else ''
                     
                     # Get or create region
                     region = Region.query.filter_by(region_name=region_name).first()
