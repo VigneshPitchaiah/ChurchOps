@@ -2,11 +2,21 @@
 
 {% block title %}Services - ChurchOps{% endblock %}
 
-{% block page_title %}Upcoming Services{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card mb-3">
     <div class="card-body">
+        <div class="d-flex justify-content-end mb-3">
+            <div class="btn-group" role="group" aria-label="Service view options">
+                <a href="{{ url_for('services.services_list', view='upcoming') }}" class="btn btn-outline-primary {% if view_type == 'upcoming' %}active{% endif %}">
+                    <i class="fas fa-calendar-day"></i> Upcoming Services
+                </a>
+                <a href="{{ url_for('services.services_list', view='previous') }}" class="btn btn-outline-primary {% if view_type == 'previous' %}active{% endif %}">
+                    <i class="fas fa-history"></i> Previous Services
+                </a>
+            </div>
+        </div>
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -28,12 +38,21 @@
                                 <td>{{ service.notes or '-' }}</td>
                                 <td>
                                     <a href="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" class="btn btn-primary btn-sm">Mark Attendance</a>
+                                    {% if view_type == 'previous' %}
+                                    <span class="badge bg-secondary ms-1">Past Event</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-center">No upcoming services found</td>
+                            <td colspan="5" class="text-center">
+                                {% if view_type == 'previous' %}
+                                No previous services found
+                                {% else %}
+                                No upcoming services found
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endif %}
                 </tbody>

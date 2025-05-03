@@ -11,6 +11,7 @@ class Person(db.Model):
     cell_id = db.Column(db.Integer, db.ForeignKey('church.cells.cell_id'), nullable=False)
     email = db.Column(db.String(100))
     phone = db.Column(db.String(20))
+    country = db.Column(db.String(50), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, onupdate=func.now())

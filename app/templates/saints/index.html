@@ -38,6 +38,20 @@
             <div class="grid mt-3">
                 <div class="col-2 col-md-4 col-sm-12">
                     <div class="form-group">
+                        <label for="country" class="form-label">Country</label>
+                        <select name="country" id="country" class="form-select">
+                            <option value="">All Countries</option>
+                            {% for country_option in countries %}
+                                <option value="{{ country_option }}" {% if filters.country == country_option %}selected{% endif %}>
+                                    {{ country_option }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-4 col-sm-12">
+                    <div class="form-group">
                         <label for="region_id" class="form-label">Region</label>
                         <select name="region_id" id="region_id" class="form-select">
                             <option value="">All Regions</option>
@@ -52,9 +66,9 @@
                 
                 <div class="col-2 col-md-4 col-sm-12">
                     <div class="form-group">
-                        <label for="direction_id" class="form-label">Region Specific</label>
+                        <label for="direction_id" class="form-label">Zones</label>
                         <select name="direction_id" id="direction_id" class="form-select">
-                            <option value="">All Specific</option>
+                            <option value="">All Zones</option>
                             {% for direction in directions %}
                                 <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id %}selected{% endif %}>
                                     {{ direction.direction_name }}
@@ -78,7 +92,7 @@
                     </div>
                 </div>
                 
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="team_id" class="form-label">Team</label>
                         <select name="team_id" id="team_id" class="form-select">
@@ -92,7 +106,7 @@
                     </div>
                 </div>
                 
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="cell_id" class="form-label">Cell</label>
                         <select name="cell_id" id="cell_id" class="form-select">
@@ -125,6 +139,8 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Mobile Number</th>
+                        <th>Country</th>
                         <th>Cell</th>
                         <th>Team</th>
                         <th>Department</th>
@@ -138,6 +154,8 @@
                         {% for person in people %}
                             <tr>
                                 <td>{{ person.first_name }} {{ person.last_name }}</td>
+                                <td>{{ person.phone or 'Not available' }}</td>
+                                <td>{{ person.country or 'Not specified' }}</td>
                                 <td>{{ person.cell.cell_name }}</td>
                                 <td>{{ person.cell.team.team_name }}</td>
                                 <td>{{ person.cell.team.department.department_name }}</td>
@@ -152,7 +170,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="7" class="text-center">No saints found matching the current filters.</td>
+                            <td colspan="9" class="text-center">No saints found matching the current filters.</td>
                         </tr>
                     {% endif %}
                 </tbody>
@@ -195,6 +213,27 @@
     .pagination-controls {
         display: flex;
         gap: 0.5rem;
+    }
+    
+    /* Improved dropdown styling */
+    .form-select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        -ms-appearance: none;
+        appearance: none;
+        padding-right: 2rem;
+        background-position: right 0.5rem center;
+        background-size: 1rem;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    
+    /* Add spacing between form groups */
+    .form-group {
+        margin-bottom: 1rem;
+        padding-right: 0.5rem;
     }
     
     .form-actions {
@@ -389,6 +428,7 @@
                             tableBody.innerHTML += `
                                 <tr>
                                     <td>${person.first_name} ${person.last_name}</td>
+                                    <td>${person.country || 'Not specified'}</td>
                                     <td>${person.cell}</td>
                                     <td>${person.team}</td>
                                     <td>${person.department}</td>
@@ -477,6 +517,7 @@
         const formInputs = [
             filterElements.nameSearch,
             filterElements.isActive,
+            filterElements.country,
             filterElements.regionId,
             filterElements.directionId,
             filterElements.departmentId,

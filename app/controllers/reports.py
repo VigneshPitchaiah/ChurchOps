@@ -71,15 +71,22 @@ def attendance_by_date():
     dates = []
     service_types = {}
     
+    # First pass: collect all unique dates
     for date, service_name, count in results:
-        # Format date
         formatted_date = date.strftime('%d %b')
         if formatted_date not in dates:
             dates.append(formatted_date)
+    
+    # Second pass: process attendance data
+    for date, service_name, count in results:
+        formatted_date = date.strftime('%d %b')
         
-        # Organize by service type
+        # Initialize service type if not exists
         if service_name not in service_types:
             service_types[service_name] = [0] * len(dates)
+        # Ensure array is properly sized (in case it was created before all dates were collected)
+        elif len(service_types[service_name]) < len(dates):
+            service_types[service_name] = service_types[service_name] + [0] * (len(dates) - len(service_types[service_name]))
         
         # Update count
         service_types[service_name][dates.index(formatted_date)] = count

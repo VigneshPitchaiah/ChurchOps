@@ -438,7 +438,8 @@ const ChurchOps = {
     
     // Initialize filter form
     initFilterForm: () => {
-        const filterForm = document.getElementById('filter-form');
+        // Support both general filter form and attendance filter form
+        const filterForm = document.getElementById('filter-form') || document.getElementById('attendance-filter-form');
         if (!filterForm || filterForm.classList.contains('no-ajax')) return;
         
         // Dependent dropdowns for hierarchy

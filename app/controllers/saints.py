@@ -27,6 +27,10 @@ def saints_list():
     # Get dropdown data for filters with optimized queries
     regions = Region.query.order_by(Region.region_name).all()
     
+    # Get unique country values for filter dropdown
+    countries = db.session.query(Person.country).filter(Person.country != None).distinct().order_by(Person.country).all()
+    countries = [country[0] for country in countries if country[0]]
+    
     # Get directions with their parent region info
     directions_query = db.session.query(
         Direction.direction_id,
@@ -169,6 +173,11 @@ def saints_list():
     
     if cell_id:
         people_query = people_query.filter(Cell.cell_id == cell_id)
+        
+    # Filter by country if provided
+    country = request.args.get('country', '')
+    if country:
+        people_query = people_query.filter(Person.country == country)
     
     if name_search:
         people_query = people_query.filter(
@@ -204,7 +213,9 @@ def saints_list():
                 'person_id': person.person_id,
                 'first_name': person.first_name,
                 'last_name': '' if isinstance(person.last_name, float) and math.isnan(person.last_name) else person.last_name,
+                'mobile_number': person.phone or 'Not available',
                 'is_active': person.is_active,
+                'country': person.country or 'Not specified',
                 'cell': person.cell.cell_name,
                 'team': person.cell.team.team_name,
                 'department': person.cell.team.department.department_name,
@@ -231,6 +242,8 @@ def saints_list():
                 html_content += f"""
                 <tr>
                     <td>{person.first_name} {person.last_name}</td>
+                    <td>{person.phone or 'Not available'}</td>
+                    <td>{person.country or 'Not specified'}</td>
                     <td>{person.cell.cell_name}</td>
                     <td>{person.cell.team.team_name}</td>
                     <td>{person.cell.team.department.department_name}</td>
@@ -244,7 +257,7 @@ def saints_list():
                 </tr>
                 """
         else:
-            html_content = '<tr><td colspan="7" class="text-center">No saints found matching the current filters.</td></tr>'
+            html_content = '<tr><td colspan="9" class="text-center">No saints found matching the current filters.</td></tr>'
         
         # Generate pagination HTML
         pagination_html = ""
@@ -276,6 +289,7 @@ def saints_list():
         departments=formatted_departments,
         teams=teams,
         cells=cells,
+        countries=countries,
         filters={
             'region_id': region_id,
             'direction_id': direction_id,
@@ -283,7 +297,8 @@ def saints_list():
             'team_id': team_id,
             'cell_id': cell_id,
             'is_active': is_active,
-            'name_search': name_search
+            'name_search': name_search,
+            'country': request.args.get('country', '')
         },
         now=datetime.now()
     )

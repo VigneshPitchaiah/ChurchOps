@@ -12,37 +12,39 @@
 
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">Search People</h2>
-    </div>
-    <div class="card-body">
-        <div class="search-container">
-            <input type="text" id="search-people" class="form-control" placeholder="Search by name..." data-service-id="{{ service.service_id }}">
-            <div id="search-results" class="search-results"></div>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
         <h2 class="card-title">Filters</h2>
     </div>
     <div class="card-body">
         <form id="attendance-filter-form" class="no-ajax" action="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" method="get">
             <div class="grid">
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="name_search" class="form-label">Name</label>
                         <input type="text" name="name_search" id="name_search" class="form-control" value="{{ filters.name_search }}">
                     </div>
                 </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="country" class="form-label">Country</label>
+                        <select name="country" id="country" class="form-select">
+                            <option value="">All Countries</option>
+                            {% for country_option in countries %}
+                                <option value="{{ country_option }}" {% if filters.country == country_option %}selected{% endif %}>
+                                    {{ country_option }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="region_id" class="form-label">Region</label>
                         <select name="region_id" id="region_id" class="form-select">
                             <option value="">All Regions</option>
                             {% for region in regions %}
-                                <option value="{{ region.region_id }}" {% if filters.region_id == region.region_id|string %}selected{% endif %}>
+                                <option value="{{ region.region_id }}" {% if filters.region_id == region.region_id %}selected{% endif %}>
                                     {{ region.region_name }}
                                 </option>
                             {% endfor %}
@@ -50,13 +52,13 @@
                     </div>
                 </div>
                 
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
-                        <label for="direction_id" class="form-label">Region Specific</label>
+                        <label for="direction_id" class="form-label">Zones</label>
                         <select name="direction_id" id="direction_id" class="form-select">
-                            <option value="">All Specific</option>
+                            <option value="">All Zones</option>
                             {% for direction in directions %}
-                                <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id|string %}selected{% endif %}>
+                                <option value="{{ direction.direction_id }}" {% if filters.direction_id == direction.direction_id %}selected{% endif %}>
                                     {{ direction.direction_name }}
                                 </option>
                             {% endfor %}
@@ -64,13 +66,13 @@
                     </div>
                 </div>
                 
-                <div class="col-3 col-md-6 col-sm-12">
+                <div class="col-2 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="department_id" class="form-label">Department</label>
                         <select name="department_id" id="department_id" class="form-select">
                             <option value="">All Departments</option>
                             {% for department in departments %}
-                                <option value="{{ department.department_id }}" {% if filters.department_id == department.department_id|string %}selected{% endif %}>
+                                <option value="{{ department.department_id }}" {% if filters.department_id == department.department_id %}selected{% endif %}>
                                     {{ department.department_name }}
                                 </option>
                             {% endfor %}
@@ -80,13 +82,13 @@
             </div>
             
             <div class="grid mt-3">
-                <div class="col-4 col-md-6 col-sm-12">
+                <div class="col-3 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="team_id" class="form-label">Team</label>
                         <select name="team_id" id="team_id" class="form-select">
                             <option value="">All Teams</option>
                             {% for team in teams %}
-                                <option value="{{ team.team_id }}" {% if filters.team_id == team.team_id|string %}selected{% endif %}>
+                                <option value="{{ team.team_id }}" {% if filters.team_id == team.team_id %}selected{% endif %}>
                                     {{ team.team_name }}
                                 </option>
                             {% endfor %}
@@ -94,13 +96,13 @@
                     </div>
                 </div>
                 
-                <div class="col-4 col-md-6 col-sm-12">
+                <div class="col-3 col-md-6 col-sm-12">
                     <div class="form-group">
                         <label for="cell_id" class="form-label">Cell</label>
                         <select name="cell_id" id="cell_id" class="form-select">
                             <option value="">All Cells</option>
                             {% for cell in cells %}
-                                <option value="{{ cell.cell_id }}" {% if filters.cell_id == cell.cell_id|string %}selected{% endif %}>
+                                <option value="{{ cell.cell_id }}" {% if filters.cell_id == cell.cell_id %}selected{% endif %}>
                                     {{ cell.cell_name }}
                                 </option>
                             {% endfor %}
@@ -108,7 +110,7 @@
                     </div>
                 </div>
                 
-                <div class="col-4 col-md-12 col-sm-12">
+                <div class="col-6 col-md-12 col-sm-12">
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Apply Filters</button>
                         <a href="{{ url_for('attendance.attendance_form', service_id=service.service_id) }}" class="btn btn-outline">Reset</a>
@@ -131,21 +133,30 @@
                 <span class="legend-item"><span class="status-indicator not-marked"></span> Not Marked</span>
             </div>
         </div>
+
         <div class="card-body">
             <div class="table-container">
                 <table class="table">
                     <thead>
                         <tr>
+                            <th class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+                                    <label class="form-check-label" for="select-all-checkbox">All</label>
+                                </div>
+                            </th>
                             <th class="text-center">Status</th>
                             <th>Name</th>
+                            <th>Country</th>
                             <th>Cell</th>
                             <th>Team</th>
                             <th>Department</th>
-                            <th>Region Specific</th>
+                            <th>Zones</th>
                             <th>Region</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="attendance-table-body">
                         {% if organized_people %}
                             {% set people_list = [] %}
                             {% for region_name, region_data in organized_people.items() %}
@@ -158,6 +169,7 @@
                                                         'id': person.id,
                                                         'name': person.name,
                                                         'status': person.status|default('not-marked'),
+                                                        'country': person.country|default('Not specified'),
                                                         'cell': cell_name,
                                                         'team': team_name,
                                                         'department': department_name,
@@ -172,10 +184,13 @@
                             {% endfor %}
                             
                             {% for person in people_list %}
-                                <tr class="person-row status-{{ person.status }}">
+                                <tr class="person-row status-{{ person.status }}" data-cell="{{ person.cell }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="person-checkbox" data-person-id="{{ person.id }}">
+                                    </td>
                                     <td class="text-center">
                                         <div class="attendance-control">
-                                            <select name="person_status[{{ person.id }}]" class="attendance-select">
+                                            <select name="person_status[{{ person.id }}]" class="attendance-select" id="status-{{ person.id }}">
                                                 <option value="not-marked" {% if person.status == 'not-marked' %}selected{% endif %}>Not Marked</option>
                                                 <option value="present" {% if person.status == 'present' %}selected{% endif %}>Present</option>
                                                 <option value="absent" {% if person.status == 'absent' %}selected{% endif %}>Absent</option>
@@ -183,16 +198,21 @@
                                         </div>
                                     </td>
                                     <td>{{ person.name }}</td>
+                                    <td>{{ person.country }}</td>
                                     <td>{{ person.cell }}</td>
                                     <td>{{ person.team }}</td>
                                     <td>{{ person.department }}</td>
                                     <td>{{ person.direction }}</td>
                                     <td>{{ person.region }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-success btn-sm mark-present" data-person-id="{{ person.id }}">Present</button>
+                                        <button type="button" class="btn btn-danger btn-sm mark-absent" data-person-id="{{ person.id }}">Absent</button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" class="text-center">No people found matching the current filters.</td>
+                                <td colspan="10" class="text-center">No people found matching the current filters.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -210,6 +230,39 @@
 
 {% block styles %}
 <style>
+    /* Bulk actions styling */
+    .bulk-action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .btn-xs {
+        padding: 1px 5px;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        border-radius: 2px;
+    }
+    /* Improved dropdown styling */
+    .form-select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        -ms-appearance: none;
+        appearance: none;
+        padding-right: 2rem;
+        background-position: right 0.5rem center;
+        background-size: 1rem;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    
+    /* Add spacing between form groups */
+    .form-group {
+        margin-bottom: 1rem;
+        padding-right: 0.5rem;
+    }
+    
     .search-container {
         position: relative;
         margin-bottom: 1.5rem;
@@ -379,26 +432,83 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('search-people');
-        const searchResults = document.getElementById('search-results');
-        const serviceId = searchInput?.getAttribute('data-service-id');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const searchInput = document.getElementById('name_search');
+        const searchResults = document.getElementById('search-results');
         const attendanceForm = document.getElementById('attendance-form');
         const saveButton = document.getElementById('save-attendance-btn');
         
-        // Only show one loading overlay at a time
+        // Extract service ID from the URL for filter persistence
+        const urlParams = new URLSearchParams(window.location.search);
+        const serviceId = "{{ service.service_id }}";
+        
+        // Function to show the loading overlay
         function showLoading() {
-            if(loadingOverlay) loadingOverlay.classList.remove('hidden');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('hidden');
+            }
+            
+            // Add protection against duplicate loading overlays
+            document.querySelectorAll('.loading-overlay').forEach((overlay, index) => {
+                if (index > 0) overlay.remove();
+            });
+            
+            // Set a timeout to automatically hide the loading overlay after 10 seconds
+            // This prevents a stuck loading state if something goes wrong
+            setTimeout(() => {
+                hideLoading();
+            }, 10000);
         }
         
+        // Function to hide the loading overlay
         function hideLoading() {
-            if(loadingOverlay) loadingOverlay.classList.add('hidden');
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
         }
         
-        // Add protection against duplicate loading overlays
-        document.querySelectorAll('.loading-overlay').forEach((overlay, index) => {
-            if (index > 0) overlay.remove();
-        });
+        // Function to save current filters to localStorage
+        function saveFilters() {
+            if (!filterForm) return;
+            
+            const formData = new FormData(filterForm);
+            const filterData = {};
+            
+            for (const [key, value] of formData.entries()) {
+                if (value) { // Only save non-empty values
+                    filterData[key] = value;
+                }
+            }
+            
+            localStorage.setItem('attendance_filters_' + serviceId, JSON.stringify(filterData));
+        }
+        
+        // Function to load saved filters from localStorage
+        function loadSavedFilters() {
+            if (!filterForm) return;
+            
+            const savedFilters = localStorage.getItem('attendance_filters_' + serviceId);
+            if (!savedFilters) return;
+            
+            try {
+                const filterData = JSON.parse(savedFilters);
+                
+                // Apply saved filters to form
+                for (const [key, value] of Object.entries(filterData)) {
+                    const input = filterForm.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.value = value;
+                    }
+                }
+                
+                // Trigger filter submission to apply saved filters
+                setTimeout(() => {
+                    filterForm.dispatchEvent(new Event('submit'));
+                }, 500);
+            } catch (error) {
+                console.error('Error loading saved filters:', error);
+            }
+        }
         
         // Handle search input
         searchInput.addEventListener('input', function() {
@@ -486,29 +596,127 @@
         const filterForm = document.getElementById('attendance-filter-form');
         if(filterForm) {
             filterForm.addEventListener('submit', function(e) {
-                // Save current filters
-                const filters = {};
-                new FormData(this).forEach((value, key) => {
-                    filters[key] = value;
-                });
+                e.preventDefault();
+                showLoading();
                 
-                // Store in localStorage
-                localStorage.setItem('attendance_filters_' + serviceId, JSON.stringify(filters));
+                // Get form data
+                const formData = new FormData(this);
+                // Add an ajax flag
+                formData.append('ajax', 'true');
+                
+                // Save filters to localStorage
+                saveFilters();
+                
+                // Build query string
+                const queryParams = new URLSearchParams(formData).toString();
+                
+                // Make an AJAX request
+                fetch(this.action + '?' + queryParams)
+                    .then(response => response.text())
+                    .then(html => {
+                        // Parse the response HTML
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // Extract the attendance table body
+                        const newTable = doc.querySelector('#attendance-table-body');
+                        const currentTable = document.querySelector('#attendance-table-body');
+                        
+                        if (newTable && currentTable) {
+                            currentTable.innerHTML = newTable.innerHTML;
+                            
+                            // Re-attach event listeners to new elements
+                            document.querySelectorAll('.attendance-select').forEach(select => {
+                                select.addEventListener('change', function() {
+                                    const row = this.closest('tr');
+                                    if(row) {
+                                        // Remove all status classes
+                                        row.classList.remove('status-present', 'status-absent', 'status-not-marked');
+                                        // Add the new status class
+                                        row.classList.add(`status-${this.value}`);
+                                    }
+                                });
+                            });
+                        } else {
+                            console.error('Could not find table body to update. Check for element with ID "attendance-table-body"');
+                            // Try a fallback approach
+                            const mainContent = doc.querySelector('.table-container');
+                            const currentContent = document.querySelector('.table-container');
+                            if (mainContent && currentContent) {
+                                currentContent.innerHTML = mainContent.innerHTML;
+                            } else {
+                                // Last resort: reload the page
+                                window.location.href = this.action + '?' + queryParams.replace('&ajax=true', '');
+                                return;
+                            }
+                        }
+                        
+                        // Update URL without refreshing
+                        const newUrl = this.action + '?' + queryParams.replace('&ajax=true', '');
+                        window.history.replaceState({ path: newUrl }, '', newUrl);
+                        
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error applying filters:', error);
+                        hideLoading();
+                        alert('An error occurred while applying filters. Please try again.');
+                    });
             });
             
-            // Load filters from localStorage on page load
-            try {
-                const savedFilters = localStorage.getItem('attendance_filters_' + serviceId);
-                if(savedFilters) {
-                    const filters = JSON.parse(savedFilters);
-                    Object.entries(filters).forEach(([key, value]) => {
-                        const input = filterForm.elements[key];
-                        if(input) input.value = value;
-                    });
+            // Reset all filter values to default when page loads
+            // Make sure dropdowns have their default option selected
+            const filterInputs = filterForm.querySelectorAll('select, input');
+            filterInputs.forEach(input => {
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0; // Select first option (usually 'All')
+                } else if (input.type === 'text') {
+                    input.value = ''; // Clear text inputs
                 }
-            } catch(e) {
-                console.error('Error loading saved filters:', e);
+            });
+            
+            // Add change event listeners to form inputs for real-time filtering
+            const formInputs = [
+                document.getElementById('name_search'),
+                document.getElementById('is_active'),
+                document.getElementById('region_id'),
+                document.getElementById('direction_id'),
+                document.getElementById('department_id'),
+                document.getElementById('team_id'),
+                document.getElementById('cell_id')
+            ];
+            
+            // Setup debounce function
+            function debounce(func, wait = 300) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
             }
+            
+            // Add debounced event listeners to form inputs
+            // Add country to form inputs if not already included
+            if (document.getElementById('country') && !formInputs.includes(document.getElementById('country'))) {
+                formInputs.push(document.getElementById('country'));
+            }
+            
+            formInputs.forEach(input => {
+                if (input) {
+                    // Use input event for text fields, change for dropdowns
+                    const eventType = input.tagName === 'INPUT' && input.type === 'text' ? 'input' : 'change';
+                    input.addEventListener(eventType, debounce((e) => {
+                        // Don't trigger for hierarchical dropdown updates to avoid multiple submissions
+                        if (e.isTrusted) {
+                            filterForm.dispatchEvent(new Event('submit'));
+                        }
+                    }, input.type === 'text' ? 500 : 300));
+                }
+            });
         }
         
         // Handle form submission with loading indicator
@@ -529,9 +737,15 @@
                 .then(data => {
                     hideLoading();
                     if(data.success) {
+                        // Clear saved filters from localStorage
+                        localStorage.removeItem('attendance_filters_' + serviceId);
+                        
                         alert(data.message || 'Attendance saved successfully');
                         // Update UI to reflect saved state
                         updateAttendanceUI(data.attendance);
+                        
+                        // Redirect to the form without filters
+                        window.location.href = attendanceForm.action;
                     } else {
                         alert(data.message || 'Error saving attendance');
                     }
@@ -572,6 +786,67 @@
                     row.classList.add(`status-${this.value}`);
                 }
             });
+        });
+        
+        // Bulk selection functionality - simplified
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const personCheckboxes = document.querySelectorAll('.person-checkbox');
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                personCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    
+                    // Update the status based on selection
+                    const personId = checkbox.getAttribute('data-person-id');
+                    const select = document.getElementById('status-' + personId);
+                    if (select && this.checked) {
+                        select.value = 'present';
+                        // Trigger change event to update row styling
+                        select.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        // Helper function to update "Select All" checkbox state
+        function updateSelectAllCheckboxState() {
+            if (selectAllCheckbox) {
+                const totalCheckboxes = personCheckboxes.length;
+                const checkedCheckboxes = document.querySelectorAll('.person-checkbox:checked').length;
+                
+                selectAllCheckbox.checked = (totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+                selectAllCheckbox.indeterminate = (checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
+            }
+        }
+        
+        // Add change event listeners to checkboxes to update Select All state
+        personCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckboxState);
+        });
+        
+        // Auto-selection by cell
+        const uniqueCells = new Set();
+        document.querySelectorAll('[data-cell]').forEach(row => {
+            uniqueCells.add(row.getAttribute('data-cell'));
+        });
+        
+        // We're not using the cell selector anymore as per user request
+        
+        // Helper function to update "Select All" checkbox state
+        function updateSelectAllCheckboxState() {
+            if (selectAllCheckbox) {
+                const totalCheckboxes = personCheckboxes.length;
+                const checkedCheckboxes = document.querySelectorAll('.person-checkbox:checked').length;
+                
+                selectAllCheckbox.checked = (totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+                selectAllCheckbox.indeterminate = (checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
+            }
+        }
+        
+        // Add change event listeners to checkboxes to update Select All state
+        personCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckboxState);
         });
         
         // Hierarchical dropdown functionality
@@ -622,9 +897,74 @@
         // Add data attributes to all options to track relationships
         function initDropdownOptions() {
             // Before we do anything, we need to add data attributes to each option to track their relationships
-            // The backend needs to be updated to provide these relationships
-            
-            // Create a fetch request to get hierarchical data
+            // Try to infer relationships from existing data if possible
+            try {
+                // Manual inference approach if API is not available
+                // This adds basic relationships based on option text and patterns
+                // For Direction options, add data-region-id based on existing data
+                originalDirections.forEach(option => {
+                    if (option.value) {
+                        // Find the region option that might contain this direction
+                        const regionOptions = Array.from(regionSelect.options);
+                        for (const regionOption of regionOptions) {
+                            if (regionOption.value && option.text.includes(regionOption.text)) {
+                                option.setAttribute('data-region-id', regionOption.value);
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                // For Department options, we try a similar approach
+                originalDepartments.forEach(option => {
+                    if (option.value) {
+                        // Use parent indices or naming patterns to infer relationships
+                        const directionOptions = Array.from(directionSelect.options);
+                        for (const directionOption of directionOptions) {
+                            if (directionOption.value && option.text.includes(directionOption.text)) {
+                                option.setAttribute('data-direction-id', directionOption.value);
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                // Similar approach for team options
+                originalTeams.forEach(option => {
+                    if (option.value) {
+                        // Use parent indices or naming patterns to infer relationships
+                        const departmentOptions = Array.from(departmentSelect.options);
+                        for (const deptOption of departmentOptions) {
+                            if (deptOption.value && option.text.includes(deptOption.text)) {
+                                option.setAttribute('data-department-id', deptOption.value);
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                // And for cell options
+                originalCells.forEach(option => {
+                    if (option.value) {
+                        const teamOptions = Array.from(teamSelect.options);
+                        for (const teamOption of teamOptions) {
+                            if (teamOption.value && option.text.includes(teamOption.text)) {
+                                option.setAttribute('data-team-id', teamOption.value);
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                // Set up proper dropdown events
+                setupDropdownEvents();
+            } catch (error) {
+                console.error('Error during manual hierarchy inference:', error);
+                // Fall back to basic filter events
+                setupBasicFilterEvents();
+            }
+
+            // Try API as a backup for better hierarchy data
             fetch('/api/organization/hierarchy')
                 .then(response => {
                     if (!response.ok) {
@@ -678,30 +1018,37 @@
                 })
                 .catch(error => {
                     console.error('Error loading hierarchy data:', error);
-                    // Fallback - just set up events without relationships
-                    setupBasicFilterEvents();
+                    // Already handled with manual inference, no need for additional fallback
                 });
         }
         
         // Set up event listeners for dropdowns
         function setupDropdownEvents() {
             // Region changes affect Directions
-            regionSelect.addEventListener('change', function() {
+            regionSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
                 updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
             });
             
             // Direction changes affect Departments
-            directionSelect.addEventListener('change', function() {
+            directionSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
                 updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
             });
             
             // Department changes affect Teams
-            departmentSelect.addEventListener('change', function() {
+            departmentSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
                 updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
             });
             
             // Team changes affect Cells
-            teamSelect.addEventListener('change', function() {
+            teamSelect.addEventListener('change', function(e) {
+                // Stop propagation to prevent duplicate filter event
+                e.stopPropagation();
                 updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
             });
         }
@@ -709,29 +1056,30 @@
         // Fallback method if we can't load hierarchy data
         function setupBasicFilterEvents() {
             const form = document.getElementById('attendance-filter-form');
-            regionSelect.addEventListener('change', function() {
-                form.submit();
-            });
             
-            directionSelect.addEventListener('change', function() {
-                form.submit();
-            });
+            const setupDebounceHandler = (element) => {
+                if (element) {
+                    element.addEventListener('change', function(e) {
+                        e.preventDefault();
+                        form.dispatchEvent(new Event('submit'));
+                    });
+                }
+            };
             
-            departmentSelect.addEventListener('change', function() {
-                form.submit();
-            });
-            
-            teamSelect.addEventListener('change', function() {
-                form.submit();
-            });
-            
-            cellSelect.addEventListener('change', function() {
-                form.submit();
-            });
+            setupDebounceHandler(regionSelect);
+            setupDebounceHandler(directionSelect);
+            setupDebounceHandler(departmentSelect);
+            setupDebounceHandler(teamSelect);
+            setupDebounceHandler(cellSelect);
+            setupDebounceHandler(document.getElementById('name_search'));
+            setupDebounceHandler(document.getElementById('is_active'));
         }
         
         // Initialize dropdown options with relationships
         initDropdownOptions();
+        
+        // Load any saved filters from localStorage
+        loadSavedFilters();
     });
 </script>
 {% endblock %}
