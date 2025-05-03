@@ -144,7 +144,8 @@ def attendance_form(service_id):
             'id': person.person_id,
             'name': f"{person.first_name} {person.last_name}",
             'country': person.country,
-            'marked': person.person_id in marked_ids
+            'marked': person.person_id in marked_ids,
+            'status': next((record.status for record in marked_attendance if record.person_id == person.person_id), 'not-marked')
         })
     
     return render_template(

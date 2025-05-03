@@ -130,6 +130,7 @@
             <div class="attendance-legend">
                 <span class="legend-item"><span class="status-indicator present"></span> Present</span>
                 <span class="legend-item"><span class="status-indicator absent"></span> Absent</span>
+                <span class="legend-item"><span class="status-indicator watched-recording"></span> Watched Recording</span>
                 <span class="legend-item"><span class="status-indicator not-marked"></span> Not Marked</span>
             </div>
         </div>
@@ -153,7 +154,6 @@
                             <th>Department</th>
                             <th>Zones</th>
                             <th>Region</th>
-                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="attendance-table-body">
@@ -174,7 +174,8 @@
                                                         'team': team_name,
                                                         'department': department_name,
                                                         'direction': direction_name,
-                                                        'region': region_name
+                                                        'region': region_name,
+                                                        'marked': person.marked
                                                     }) %}
                                                 {% endfor %}
                                             {% endfor %}
@@ -184,7 +185,7 @@
                             {% endfor %}
                             
                             {% for person in people_list %}
-                                <tr class="person-row status-{{ person.status }}" data-cell="{{ person.cell }}">
+                                <tr class="person-row status-{{ person.status }} {% if person.marked %}previously-marked{% endif %}" data-cell="{{ person.cell }}">
                                     <td class="text-center">
                                         <input type="checkbox" class="person-checkbox" data-person-id="{{ person.id }}">
                                     </td>
@@ -194,6 +195,7 @@
                                                 <option value="not-marked" {% if person.status == 'not-marked' %}selected{% endif %}>Not Marked</option>
                                                 <option value="present" {% if person.status == 'present' %}selected{% endif %}>Present</option>
                                                 <option value="absent" {% if person.status == 'absent' %}selected{% endif %}>Absent</option>
+                                                <option value="watched-recording" {% if person.status == 'watched-recording' %}selected{% endif %}>Watched Recording</option>
                                             </select>
                                         </div>
                                     </td>
@@ -204,15 +206,11 @@
                                     <td>{{ person.department }}</td>
                                     <td>{{ person.direction }}</td>
                                     <td>{{ person.region }}</td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-success btn-sm mark-present" data-person-id="{{ person.id }}">Present</button>
-                                        <button type="button" class="btn btn-danger btn-sm mark-absent" data-person-id="{{ person.id }}">Absent</button>
-                                    </td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="10" class="text-center">No people found matching the current filters.</td>
+                                <td colspan="9" class="text-center">No people found matching the current filters.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -402,17 +400,25 @@
         background-color: #dc3545;
     }
     
+    .status-indicator.watched-recording {
+        background-color: #ffc107;
+    }
+    
     .status-indicator.not-marked {
         background-color: #6c757d;
         opacity: 0.5;
     }
     
     .status-present {
-        background-color: rgba(40, 167, 69, 0.1);
+        background-color: rgba(40, 167, 69, 0.2);
     }
     
     .status-absent {
         background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .status-watched-recording {
+        background-color: rgba(255, 193, 7, 0.2);
     }
     
     .attendance-control {
@@ -425,6 +431,11 @@
         font-size: 0.875rem;
         border-radius: 0.25rem;
         border: 1px solid #ced4da;
+    }
+
+    /* Status row styling */
+    .previously-marked {
+        background-color: rgba(40, 167, 69, 0.1) !important;
     }
 </style>
 {% endblock %}
@@ -631,7 +642,7 @@
                                     const row = this.closest('tr');
                                     if(row) {
                                         // Remove all status classes
-                                        row.classList.remove('status-present', 'status-absent', 'status-not-marked');
+                                        row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched-recording');
                                         // Add the new status class
                                         row.classList.add(`status-${this.value}`);
                                     }
@@ -781,7 +792,7 @@
                 const row = this.closest('tr');
                 if(row) {
                     // Remove all status classes
-                    row.classList.remove('status-present', 'status-absent', 'status-not-marked');
+                    row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched-recording');
                     // Add the new status class
                     row.classList.add(`status-${this.value}`);
                 }
