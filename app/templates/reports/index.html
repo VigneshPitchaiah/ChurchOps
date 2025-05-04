@@ -33,6 +33,20 @@
             </div>
         </div>
     </div>
+
+    <div class="col-6 col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Detailed Attendance Report</h2>
+            </div>
+            <div class="card-body">
+                <p>View and download detailed attendance data filtered by person, gender, team, department, region, and cell.</p>
+                <div class="card-actions">
+                    <a href="{{ url_for('reports.detailed_report') }}" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

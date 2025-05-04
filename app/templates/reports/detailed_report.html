@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Detailed Attendance Report - ChurchOps{% endblock %}
+
+{% block page_title %}Detailed Attendance Report{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('reports.reports_index') }}" class="btn btn-outline">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    Back to Reports
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Filter Report</h2>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" method="get" action="{{ url_for('reports.detailed_report') }}">
+            <div class="grid">
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="days" class="form-label">Time Period</label>
+                        <select name="days" id="days" class="form-select">
+                            <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                            <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                            <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="gender" class="form-label">Gender</label>
+                        <select name="gender" id="gender" class="form-select">
+                            <option value="">All</option>
+                            <option value="M" {% if gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if gender == 'F' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="region_id" class="form-label">Region</label>
+                        <select name="region_id" id="region_id" class="form-select">
+                            <option value="">All Regions</option>
+                            {% for region in regions %}
+                                <option value="{{ region.region_id }}" {% if region_id == region.region_id %}selected{% endif %}>{{ region.region_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="direction_id" class="form-label">Zone</label>
+                        <select name="direction_id" id="direction_id" class="form-select">
+                            <option value="">All Zones</option>
+                            {% for direction in directions %}
+                                <option value="{{ direction.direction_id }}" data-region-id="{{ direction.region_id }}" {% if direction_id == direction.direction_id %}selected{% endif %}>
+                                    {{ direction.direction_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="department_id" class="form-label">Department</label>
+                        <select name="department_id" id="department_id" class="form-select">
+                            <option value="">All Departments</option>
+                            {% for department in departments %}
+                                <option value="{{ department.department_id }}" data-direction-id="{{ department.direction_id }}" {% if department_id == department.department_id %}selected{% endif %}>
+                                    {{ department.department_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="team_id" class="form-label">Team</label>
+                        <select name="team_id" id="team_id" class="form-select">
+                            <option value="">All Teams</option>
+                            {% for team in teams %}
+                                <option value="{{ team.team_id }}" data-department-id="{{ team.department_id }}" {% if team_id == team.team_id %}selected{% endif %}>
+                                    {{ team.team_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-2 col-md-6 col-sm-12">
+                    <div class="form-group">
+                        <label for="cell_id" class="form-label">Cell</label>
+                        <select name="cell_id" id="cell_id" class="form-select">
+                            <option value="">All Cells</option>
+                            {% for cell in cells %}
+                                <option value="{{ cell.cell_id }}" data-team-id="{{ cell.team_id }}" {% if cell_id == cell.cell_id %}selected{% endif %}>
+                                    {{ cell.cell_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{{ url_for('reports.detailed_report') }}" class="btn btn-outline">Reset</a>
+                <button type="button" id="download-btn" class="btn btn-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download CSV
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">Attendance Results</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Cell</th>
+                        <th>Team</th>
+                        <th>Department</th>
+                        <th>Zone</th>
+                        <th>Region</th>
+                        <th>Present</th>
+                        <th>Watched Recording</th>
+                        <th>Absent</th>
+                        <th>Total Marked</th>
+                        <th>Total Services</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body">
+                    {% if results %}
+                        {% for result in results %}
+                            <tr>
+                                <td>{{ result['first_name'] }} {{ result['last_name'] }}</td>
+                                <td>{{ result['gender'] or 'Not specified' }}</td>
+                                <td>{{ result['cell_name'] }}</td>
+                                <td>{{ result['team_name'] }}</td>
+                                <td>{{ result['department_name'] }}</td>
+                                <td>{{ result['direction_name'] }}</td>
+                                <td>{{ result['region_name'] }}</td>
+                                <td>{{ result['present_count'] }}</td>
+                                <td>{{ result['watched_recording_count'] }}</td>
+                                <td>{{ result['absent_count'] }}</td>
+                                <td>{{ result['marked_services'] }}</td>
+                                <td>{{ result['total_services'] }}</td>
+                                <td>{{ "%.1f"|format(result['attendance_percentage']) }}%</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="13" class="text-center">No results found matching the current filters.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all dropdown elements
+    const regionSelect = document.getElementById('region_id');
+    const directionSelect = document.getElementById('direction_id');
+    const departmentSelect = document.getElementById('department_id');
+    const teamSelect = document.getElementById('team_id');
+    const cellSelect = document.getElementById('cell_id');
+    const filterForm = document.getElementById('filter-form');
+    const downloadButton = document.getElementById('download-btn');
+    const tableBody = document.getElementById('results-table-body');
+
+    // Store original options
+    const originalDirections = Array.from(directionSelect.options);
+    const originalDepartments = Array.from(departmentSelect.options);
+    const originalTeams = Array.from(teamSelect.options);
+    const originalCells = Array.from(cellSelect.options);
+
+    // Function to update dependent dropdowns
+    function updateDropdowns(parentSelect, childSelect, originalOptions, attributeName) {
+        const selectedValue = parentSelect.value;
+        childSelect.innerHTML = '';
+        childSelect.appendChild(originalOptions[0].cloneNode(true));
+
+        if (selectedValue) {
+            originalOptions.forEach(option => {
+                if (option.value && option.getAttribute(attributeName) === selectedValue) {
+                    childSelect.appendChild(option.cloneNode(true));
+                }
+            });
+        } else {
+            originalOptions.forEach((option, index) => {
+                if (index > 0) {
+                    childSelect.appendChild(option.cloneNode(true));
+                }
+            });
+        }
+
+        // Trigger change event to cascade down
+        childSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Function to load filtered data
+    async function loadFilteredData() {
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Loading...</td></tr>';
+        }
+
+        // Get form data
+        const formData = new FormData(filterForm);
+        const queryParams = new URLSearchParams(formData).toString();
+
+        try {
+            const response = await fetch(filterForm.action + '?' + queryParams, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            
+            if (!data.results || data.results.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center">No results found matching the current filters.</td></tr>';
+                return;
+            }
+
+            // Update table with results
+            tableBody.innerHTML = data.results.map(result => `
+                <tr>
+                    <td>${result.first_name} ${result.last_name}</td>
+                    <td>${result.gender || 'Not specified'}</td>
+                    <td>${result.cell_name}</td>
+                    <td>${result.team_name}</td>
+                    <td>${result.department_name}</td>
+                    <td>${result.direction_name}</td>
+                    <td>${result.region_name}</td>
+                    <td>${result.present_count}</td>
+                    <td>${result.watched_recording_count}</td>
+                    <td>${result.absent_count}</td>
+                    <td>${result.marked_services}</td>
+                    <td>${result.total_services}</td>
+                    <td>${result.attendance_percentage.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+
+            // Update URL without refreshing
+            const newUrl = filterForm.action + '?' + queryParams;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+        } catch (error) {
+            console.error('Error loading filtered data:', error);
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center">An error occurred while loading data. Please try again.</td></tr>';
+            }
+        }
+    }
+
+    // Set up form submission
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            loadFilteredData();
+        });
+    }
+
+    // Set up download button
+    if (downloadButton) {
+        downloadButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const formData = new FormData(filterForm);
+            formData.append('download', 'true');
+            const queryParams = new URLSearchParams(formData).toString();
+            window.location.href = filterForm.action + '?' + queryParams;
+        });
+    }
+
+    // Set up dropdown hierarchy event listeners
+    regionSelect.addEventListener('change', function() {
+        updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
+    });
+
+    directionSelect.addEventListener('change', function() {
+        updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
+    });
+
+    departmentSelect.addEventListener('change', function() {
+        updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
+    });
+
+    teamSelect.addEventListener('change', function() {
+        updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
+    });
+
+    // Handle filter changes
+    const filterInputs = [regionSelect, directionSelect, departmentSelect, teamSelect, cellSelect];
+    filterInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('change', function() {
+                filterForm.dispatchEvent(new Event('submit'));
+            });
+        }
+    });
+
+    // Handle days filter changes
+    const daysSelect = document.getElementById('days');
+    if (daysSelect) {
+        daysSelect.addEventListener('change', function() {
+            filterForm.dispatchEvent(new Event('submit'));
+        });
+    }
+
+    // Handle gender filter changes
+    const genderSelect = document.getElementById('gender');
+    if (genderSelect) {
+        genderSelect.addEventListener('change', function() {
+            filterForm.dispatchEvent(new Event('submit'));
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.btn svg {
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    vertical-align: -0.125em;
+}
+</style>
+{% endblock %}

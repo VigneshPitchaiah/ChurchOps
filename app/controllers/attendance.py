@@ -191,6 +191,9 @@ def mark_attendance(service_id):
             person_id = key[len('person_status['):-1]
             try:
                 person_id = int(person_id)
+                # Convert watched-recording to watched_recording for consistency
+                if value == 'watched-recording':
+                    value = 'watched_recording'
                 person_status[person_id] = value
             except ValueError:
                 continue

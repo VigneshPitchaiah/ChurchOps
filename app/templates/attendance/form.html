@@ -130,7 +130,7 @@
             <div class="attendance-legend">
                 <span class="legend-item"><span class="status-indicator present"></span> Present</span>
                 <span class="legend-item"><span class="status-indicator absent"></span> Absent</span>
-                <span class="legend-item"><span class="status-indicator watched-recording"></span> Watched Recording</span>
+                <span class="legend-item"><span class="status-indicator watched_recording"></span> Watched Recording</span>
                 <span class="legend-item"><span class="status-indicator not-marked"></span> Not Marked</span>
             </div>
         </div>
@@ -195,7 +195,7 @@
                                                 <option value="not-marked" {% if person.status == 'not-marked' %}selected{% endif %}>Not Marked</option>
                                                 <option value="present" {% if person.status == 'present' %}selected{% endif %}>Present</option>
                                                 <option value="absent" {% if person.status == 'absent' %}selected{% endif %}>Absent</option>
-                                                <option value="watched-recording" {% if person.status == 'watched-recording' %}selected{% endif %}>Watched Recording</option>
+                                                <option value="watched_recording" {% if person.status == 'watched_recording' %}selected{% endif %}>Watched Recording</option>
                                             </select>
                                         </div>
                                     </td>
@@ -420,7 +420,11 @@
     .status-watched-recording {
         background-color: rgba(255, 193, 7, 0.2);
     }
-    
+
+    .status-watched_recording {
+        background-color: rgba(255, 193, 7, 0.2);
+    }
+
     .attendance-control {
         min-width: 120px;
     }
@@ -663,7 +667,7 @@
                                     const row = this.closest('tr');
                                     if(row) {
                                         // Remove all status classes
-                                        row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched-recording');
+                                        row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched_recording');
                                         // Add the new status class
                                         row.classList.add(`status-${this.value}`);
                                     }
@@ -813,7 +817,7 @@
                 const row = this.closest('tr');
                 if(row) {
                     // Remove all status classes
-                    row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched-recording');
+                    row.classList.remove('status-present', 'status-absent', 'status-not-marked', 'status-watched_recording');
                     // Add the new status class
                     row.classList.add(`status-${this.value}`);
                 }
