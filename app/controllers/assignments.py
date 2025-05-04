@@ -168,7 +168,6 @@ def save_bulk_assignment():
     return redirect(url_for('assignments.assignments_index'))
 
 @assignments_bp.route('/template')
-
 def download_template():
     """Download a CSV template for assignment imports"""
     # Create a StringIO object
@@ -176,10 +175,10 @@ def download_template():
     writer = csv.writer(output)
     
     # Write headers
-    writer.writerow(['First Name', 'Last Name', 'Email', 'Phone', 'Region', 'Direction', 'Department', 'Team', 'Cell'])
+    writer.writerow(['First Name', 'Last Name', 'Phone', 'Country', 'Region', 'Zone', 'Department', 'Team', 'Cell', 'Gender'])
     
     # Write a sample row
-    writer.writerow(['John', 'Doe', 'john.doe@example.com', '1234567890', 'Central', 'Youth', 'Music', 'Vocals', 'Choir'])
+    writer.writerow(['John', 'Doe', '1234567890', 'India', '1', 'North', 'Adult Department', 'Team A', 'Cell 1', 'M'])
     
     # Reset file pointer
     output.seek(0)
@@ -219,6 +218,7 @@ def import_assignments():
         
         # Validate columns
         required_columns = ['First Name', 'Last Name', 'Region', 'Direction', 'Department', 'Team', 'Cell']
+        optional_columns = ['Email', 'Phone', 'Country', 'Gender']
         missing_columns = [col for col in required_columns if col not in df.columns]
         
         if missing_columns:
@@ -232,167 +232,106 @@ def import_assignments():
         
         for index, row in df.iterrows():
             try:
-                # Check if person exists and handle NaN values
-                first_name = row['First Name']
-                last_name = row['Last Name']
+                # Get or create region
+                region_name = str(row['Region']) if pd.notna(row['Region']) else ''
+                direction_name = str(row['Direction']) if pd.notna(row['Direction']) else ''
+                department_name = str(row['Department']) if pd.notna(row['Department']) else ''
+                team_name = str(row['Team']) if pd.notna(row['Team']) else ''
+                cell_name = str(row['Cell']) if pd.notna(row['Cell']) else ''
                 
-                # Convert NaN values to empty string for string fields
-                first_name = '' if pd.isna(first_name) else str(first_name)
-                last_name = '' if pd.isna(last_name) else str(last_name)
-                email = '' if pd.isna(row.get('Email')) else str(row.get('Email'))
-                phone = '' if pd.isna(row.get('Phone')) else str(row.get('Phone'))
+                # Get or create region
+                region = Region.query.filter_by(region_name=region_name).first()
+                if not region:
+                    region = Region(region_name=region_name)
+                    db.session.add(region)
+                    db.session.flush()
                 
+                # Get or create direction under the region
+                direction = Direction.query.filter_by(
+                    direction_name=direction_name,
+                    region_id=region.region_id
+                ).first()
+                if not direction:
+                    direction = Direction(direction_name=direction_name, region_id=region.region_id)
+                    db.session.add(direction)
+                    db.session.flush()
+                
+                # Get or create department under the direction
+                department = Department.query.filter_by(
+                    department_name=department_name,
+                    direction_id=direction.direction_id
+                ).first()
+                if not department:
+                    department = Department(department_name=department_name, direction_id=direction.direction_id)
+                    db.session.add(department)
+                    db.session.flush()
+                
+                # Get or create team under the department
+                team = Team.query.filter_by(
+                    team_name=team_name,
+                    department_id=department.department_id
+                ).first()
+                if not team:
+                    team = Team(team_name=team_name, department_id=department.department_id)
+                    db.session.add(team)
+                    db.session.flush()
+                
+                # Get or create cell under the team
+                cell = Cell.query.filter_by(
+                    cell_name=cell_name,
+                    team_id=team.team_id
+                ).first()
+                if not cell:
+                    cell = Cell(cell_name=cell_name, team_id=team.team_id)
+                    db.session.add(cell)
+                    db.session.flush()
+                
+                # Handle person data
+                first_name = str(row['First Name']) if pd.notna(row['First Name']) else ''
+                last_name = str(row['Last Name']) if pd.notna(row['Last Name']) else ''
+                email = str(row.get('Email', '')) if pd.notna(row.get('Email', '')) else ''
+                phone = str(row.get('Phone', '')) if pd.notna(row.get('Phone', '')) else ''
+                country = str(row.get('Country', '')) if pd.notna(row.get('Country', '')) else ''
+                gender = str(row.get('Gender', '')) if pd.notna(row.get('Gender', '')) else ''
+                
+                # Find or create person
                 person = Person.query.filter(
                     Person.first_name == first_name,
                     Person.last_name == last_name
                 ).first()
                 
-                # If person doesn't exist, create them
                 if not person:
-                    # Get or create organizational units
-                    region_name = str(row['Region']) if pd.notna(row['Region']) else ''
-                    direction_name = str(row['Direction']) if pd.notna(row['Direction']) else ''
-                    department_name = str(row['Department']) if pd.notna(row['Department']) else ''
-                    team_name = str(row['Team']) if pd.notna(row['Team']) else ''
-                    cell_name = str(row['Cell']) if pd.notna(row['Cell']) else ''
-                    
-                    # Get or create region
-                    region = Region.query.filter_by(region_name=region_name).first()
-                    if not region:
-                        region = Region(region_name=region_name)
-                        db.session.add(region)
-                        db.session.flush()  # Get ID before next use
-                    
-                    # Get or create direction
-                    direction = Direction.query.filter_by(
-                        direction_name=direction_name,
-                        region_id=region.region_id
-                    ).first()
-                    if not direction:
-                        direction = Direction(direction_name=direction_name, region_id=region.region_id)
-                        db.session.add(direction)
-                        db.session.flush()
-                    
-                    # Get or create department
-                    department = Department.query.filter_by(
-                        department_name=department_name,
-                        direction_id=direction.direction_id
-                    ).first()
-                    if not department:
-                        department = Department(department_name=department_name, direction_id=direction.direction_id)
-                        db.session.add(department)
-                        db.session.flush()
-                    
-                    # Get or create team
-                    team = Team.query.filter_by(
-                        team_name=team_name,
-                        department_id=department.department_id
-                    ).first()
-                    if not team:
-                        team = Team(team_name=team_name, department_id=department.department_id)
-                        db.session.add(team)
-                        db.session.flush()
-                    
-                    # Get or create cell
-                    cell = Cell.query.filter_by(
-                        cell_name=cell_name,
-                        team_id=team.team_id
-                    ).first()
-                    if not cell:
-                        cell = Cell(cell_name=cell_name, team_id=team.team_id)
-                        db.session.add(cell)
-                        db.session.flush()
-                    
-                    # Create person
-                    email = row.get('Email', None)
-                    phone = row.get('Phone', None)
-                    
                     person = Person(
                         first_name=first_name,
                         last_name=last_name,
                         email=email,
                         phone=phone,
+                        country=country,
+                        gender=gender,
                         cell_id=cell.cell_id,
+                        direction=direction_name,  # Set the direction name
                         is_active=True
                     )
                     db.session.add(person)
-                    
                 else:
-                    # Update existing person's assignment
-                    region_name = row['Region']
-                    direction_name = row['Direction']
-                    department_name = row['Department']
-                    team_name = row['Team']
-                    cell_name = row['Cell']
-                    
-                    # Find the cell with the given hierarchy
-                    cell = Cell.query.join(Team).join(Department).join(Direction).join(Region).filter(
-                        Region.region_name == region_name,
-                        Direction.direction_name == direction_name,
-                        Department.department_name == department_name,
-                        Team.team_name == team_name,
-                        Cell.cell_name == cell_name
-                    ).first()
-                    
-                    # If cell doesn't exist, create the hierarchy
-                    if not cell:
-                        # Get or create region
-                        region = Region.query.filter_by(region_name=region_name).first()
-                        if not region:
-                            region = Region(region_name=region_name)
-                            db.session.add(region)
-                            db.session.flush()
-                        
-                        # Get or create direction
-                        direction = Direction.query.filter_by(
-                            direction_name=direction_name,
-                            region_id=region.region_id
-                        ).first()
-                        if not direction:
-                            direction = Direction(direction_name=direction_name, region_id=region.region_id)
-                            db.session.add(direction)
-                            db.session.flush()
-                        
-                        # Get or create department
-                        department = Department.query.filter_by(
-                            department_name=department_name,
-                            direction_id=direction.direction_id
-                        ).first()
-                        if not department:
-                            department = Department(department_name=department_name, direction_id=direction.direction_id)
-                            db.session.add(department)
-                            db.session.flush()
-                        
-                        # Get or create team
-                        team = Team.query.filter_by(
-                            team_name=team_name,
-                            department_id=department.department_id
-                        ).first()
-                        if not team:
-                            team = Team(team_name=team_name, department_id=department.department_id)
-                            db.session.add(team)
-                            db.session.flush()
-                        
-                        # Create cell
-                        cell = Cell(cell_name=cell_name, team_id=team.team_id)
-                        db.session.add(cell)
-                        db.session.flush()
-                    
-                    # Update person's cell
+                    # Update existing person
                     person.cell_id = cell.cell_id
-                    
-                    # Update email and phone if provided
-                    if 'Email' in row and pd.notna(row['Email']):
-                        person.email = row['Email']
-                    
-                    if 'Phone' in row and pd.notna(row['Phone']):
-                        person.phone = row['Phone']
+                    person.direction = direction_name  # Update direction name
+                    if email:
+                        person.email = email
+                    if phone:
+                        person.phone = phone
+                    if country:
+                        person.country = country
+                    if gender:
+                        person.gender = gender
                 
                 success_count += 1
                 
             except Exception as e:
                 error_count += 1
                 error_messages.append(f"Error in row {index + 2}: {str(e)}")
+                continue
         
         # Commit all changes
         db.session.commit()

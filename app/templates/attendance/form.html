@@ -598,14 +598,35 @@
                 // Clear saved filters in localStorage
                 localStorage.removeItem('attendance_filters_' + serviceId);
                 
-                // Navigate to the reset URL
-                window.location.href = this.getAttribute('href');
+                // Reset form fields
+                if (filterForm) {
+                    filterForm.reset();
+                    
+                    // Reset all dropdowns to their first option
+                    filterForm.querySelectorAll('select').forEach(select => {
+                        select.selectedIndex = 0;
+                    });
+                    
+                    // Clear text inputs
+                    filterForm.querySelectorAll('input[type="text"]').forEach(input => {
+                        input.value = '';
+                    });
+                }
+                
+                // Navigate to the reset URL without any filters
+                const baseUrl = this.getAttribute('href').split('?')[0];
+                window.location.href = baseUrl;
             });
         }
         
         // Save filters in localStorage when applied
         const filterForm = document.getElementById('attendance-filter-form');
         if(filterForm) {
+            // Only load saved filters if we're not coming from a reset action
+            if (!window.location.href.endsWith('/attendance/' + serviceId)) {
+                loadSavedFilters();
+            }
+            
             filterForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 showLoading();

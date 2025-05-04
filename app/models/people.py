@@ -9,9 +9,11 @@ class Person(db.Model):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     cell_id = db.Column(db.Integer, db.ForeignKey('church.cells.cell_id'), nullable=False)
+    direction = db.Column(db.String(100), nullable=False)  # Added direction column
     email = db.Column(db.String(100))
     phone = db.Column(db.String(20))
     country = db.Column(db.String(50), nullable=True)
+    gender = db.Column(db.String(10))  # 'M' or 'F'
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, onupdate=func.now())

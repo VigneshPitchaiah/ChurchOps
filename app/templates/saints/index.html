@@ -344,8 +344,25 @@
                 // Clear saved filters
                 clearSavedFilters();
                 
-                // Navigate to the reset URL
-                window.location.href = this.getAttribute('href');
+                // Reset all form elements
+                Object.values(filterElements).forEach(element => {
+                    if (element) {
+                        if (element.tagName === 'SELECT') {
+                            element.selectedIndex = 0;
+                        } else if (element.tagName === 'INPUT') {
+                            element.value = '';
+                        }
+                    }
+                });
+
+                // Reset all dropdowns to their original state
+                directionSelect.innerHTML = originalDirections.map(opt => opt.outerHTML).join('');
+                departmentSelect.innerHTML = originalDepartments.map(opt => opt.outerHTML).join('');
+                teamSelect.innerHTML = originalTeams.map(opt => opt.outerHTML).join('');
+                cellSelect.innerHTML = originalCells.map(opt => opt.outerHTML).join('');
+                
+                // Load the unfiltered data
+                loadFilteredData();
             });
         }
         
@@ -665,30 +682,52 @@
         function setupDropdownEvents() {
             // Region changes affect Directions
             regionSelect.addEventListener('change', function(e) {
-                // Stop propagation to prevent duplicate filter event
                 e.stopPropagation();
-                updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
+                if (this.value) {
+                    updateDropdowns(regionSelect, directionSelect, originalDirections, 'data-region-id');
+                } else {
+                    // If "All Regions" selected, restore all options in child dropdowns
+                    directionSelect.innerHTML = originalDirections.map(opt => opt.outerHTML).join('');
+                    departmentSelect.innerHTML = originalDepartments.map(opt => opt.outerHTML).join('');
+                    teamSelect.innerHTML = originalTeams.map(opt => opt.outerHTML).join('');
+                    cellSelect.innerHTML = originalCells.map(opt => opt.outerHTML).join('');
+                }
             });
             
             // Direction changes affect Departments
             directionSelect.addEventListener('change', function(e) {
-                // Stop propagation to prevent duplicate filter event
                 e.stopPropagation();
-                updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
+                if (this.value) {
+                    updateDropdowns(directionSelect, departmentSelect, originalDepartments, 'data-direction-id');
+                } else {
+                    // If "All Directions" selected, restore all options in child dropdowns
+                    departmentSelect.innerHTML = originalDepartments.map(opt => opt.outerHTML).join('');
+                    teamSelect.innerHTML = originalTeams.map(opt => opt.outerHTML).join('');
+                    cellSelect.innerHTML = originalCells.map(opt => opt.outerHTML).join('');
+                }
             });
             
             // Department changes affect Teams
             departmentSelect.addEventListener('change', function(e) {
-                // Stop propagation to prevent duplicate filter event
                 e.stopPropagation();
-                updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
+                if (this.value) {
+                    updateDropdowns(departmentSelect, teamSelect, originalTeams, 'data-department-id');
+                } else {
+                    // If "All Departments" selected, restore all options in child dropdowns
+                    teamSelect.innerHTML = originalTeams.map(opt => opt.outerHTML).join('');
+                    cellSelect.innerHTML = originalCells.map(opt => opt.outerHTML).join('');
+                }
             });
             
             // Team changes affect Cells
             teamSelect.addEventListener('change', function(e) {
-                // Stop propagation to prevent duplicate filter event
                 e.stopPropagation();
-                updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
+                if (this.value) {
+                    updateDropdowns(teamSelect, cellSelect, originalCells, 'data-team-id');
+                } else {
+                    // If "All Teams" selected, restore all options
+                    cellSelect.innerHTML = originalCells.map(opt => opt.outerHTML).join('');
+                }
             });
         }
         
